@@ -1,5 +1,7 @@
 # 智存 · ZhiCun
 
+[![CI](https://github.com/senwang16/zhicun-client/actions/workflows/ci.yml/badge.svg)](https://github.com/senwang16/zhicun-client/actions/workflows/ci.yml)
+
 **随手一存，AI 替你整理。**
 
 智存是一款 Android 优先的个人信息收集与 AI 知识管理应用：把任何 App 里的文字、链接、图片、

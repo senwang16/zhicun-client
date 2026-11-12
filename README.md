@@ -1,5 +1,7 @@
 # ZhiCun · 智存
 
+[![CI](https://github.com/senwang16/zhicun-client/actions/workflows/ci.yml/badge.svg)](https://github.com/senwang16/zhicun-client/actions/workflows/ci.yml)
+
 **Capture anything. Find it with AI.**
 
 ZhiCun is an Android-first personal knowledge app: save text, links, images, screenshots,

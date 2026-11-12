@@ -148,5 +148,6 @@ repo. Before publishing:
 | `Failed to find Build Tools revision 36.0.0` | install build-tools 36 via SDK Manager |
 | Compose compile errors after a dependency bump | versions are pinned to a compileSdk 36 ceiling; read the header of `gradle/libs.versions.toml` before upgrading anything |
 | Robolectric download stalls | confirm the Aliyun mirror system property in `app/build.gradle.kts`; first run downloads ~100 MB per SDK |
+| CI: `Plugin [id: 'com.google.devtools.ksp'] was not found`, while `curl` returns 200 | The Aliyun mirror answered **502** to the hosted runner, and Gradle treats a 5xx as fatal for that artifact instead of falling through. `settings.gradle.kts` now skips the mirrors when `CI=true`; locally they are still used. |
 | `OutOfMemoryError` during tests | increase `org.gradle.jvmargs` in `gradle.properties`; delete `~/.gradle/caches/modules-2` only as a last resort |
 | AI requests fail with 401/402/404 | check the provider card: key, account balance, base URL (up to `/v1`) and model name — see `docs/ai-provider.md` |
