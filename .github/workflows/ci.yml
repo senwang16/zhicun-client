@@ -24,11 +24,18 @@ jobs:
           distribution: temurin
           java-version: '17'
 
-      - name: Set up Android SDK
-        uses: android-actions/setup-android@v3
-
+      # The runner image already ships an Android SDK and sdkmanager. We deliberately do not
+      # use android-actions/setup-android here: recent versions call `sdkmanager tools`, which
+      # no longer exists in current command-line tools, and the action fails before our steps.
       - name: Install platform 36 and build-tools
-        run: sdkmanager "platforms;android-36" "build-tools;36.0.0"
+        run: |
+          set -euo pipefail
+          SDK_ROOT="${ANDROID_SDK_ROOT:-${ANDROID_HOME:-/usr/local/lib/android/sdk}}"
+          echo "Using SDK at $SDK_ROOT"
+          echo "sdk.dir=$SDK_ROOT" > android/local.properties
+          SDKMGR="$(command -v sdkmanager || echo "$SDK_ROOT/cmdline-tools/latest/bin/sdkmanager")"
+          yes | "$SDKMGR" --licenses > /dev/null 2>&1 || true
+          "$SDKMGR" "platforms;android-36" "build-tools;36.0.0"
 
       - name: Cache Gradle
         uses: actions/cache@v4
@@ -41,7 +48,9 @@ jobs:
 
       - name: Compile and test
         working-directory: android
-        run: ./gradlew --no-daemon :app:compileDebugKotlin :app:testDebugUnitTest
+        run: |
+          chmod +x gradlew
+          ./gradlew --no-daemon :app:compileDebugKotlin :app:testDebugUnitTest
 
       - name: Upload test reports
         if: always()
