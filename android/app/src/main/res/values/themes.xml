@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!--
+        基础主题：不使用 AppCompat / Material Components XML（UI 全部由 Compose 承载），
+        因此直接继承平台 Material 主题。
+        Edge-to-Edge 由 MainActivity 的 enableEdgeToEdge() 负责，状态栏/导航栏透明化在此兜底。
+    -->
+    <style name="Theme.ZhiCun" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:windowBackground">@color/zhicun_window_background</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+        <item name="android:windowLightStatusBar">true</item>
+    </style>
+
+    <!--
+        开屏页（附录 T，系统级 SplashScreen）。
+        刻意是"系统级"而不是自建倒计时页：开屏背景直接引用 @color/ic_launcher_background，
+        图标引用 @drawable/ic_launcher_foreground —— 整个开屏就是"放大铺满的启动图标"，
+        换图标/换品牌色时开屏自动跟变，不存在第二处要同步的地方。
+        postSplashScreenTheme 由 installSplashScreen() 在 onCreate 里切回正式主题，
+        正式主题的 windowBackground 与 Compose Surface 底色一致，过渡不闪白。
+    -->
+    <style name="Theme.ZhiCun.Starting" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">@color/ic_launcher_background</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/ic_launcher_foreground</item>
+        <item name="postSplashScreenTheme">@style/Theme.ZhiCun</item>
+    </style>
+
+    <!--
+        分享接收页专用主题：整页只有 Toast，不能闪出一块白底窗口。
+        半透明 + 无标题栏 + 无动画，看起来就像"点完分享立刻回到原来的 App"。
+    -->
+    <style name="Theme.ZhiCun.ShareReceiver" parent="android:Theme.Translucent.NoTitleBar">
+        <item name="android:windowBackground">@android:color/transparent</item>
+        <item name="android:windowIsTranslucent">true</item>
+        <item name="android:windowNoTitle">true</item>
+        <item name="android:backgroundDimEnabled">false</item>
+    </style>
+
+    <!--
+        小组件按钮（B3）：图标在上、文字在下，深底白字（见 widget_quick_capture.xml 注释）。
+        `layout_height=wrap_content` + 根布局 `gravity=center`：小组件被拉高时，
+        图标与文字作为整体垂直居中，而不是贴在上边（2026-10-24 用户反馈）。
+    -->
+    <style name="QuickWidgetButton">
+        <item name="android:layout_width">0dp</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:layout_weight">1</item>
+        <item name="android:gravity">center</item>
+        <item name="android:drawablePadding">6dp</item>
+        <item name="android:textSize">12sp</item>
+        <item name="android:textColor">#FFFFFF</item>
+        <item name="android:drawableTint">#FFFFFF</item>
+    </style>
+</resources>

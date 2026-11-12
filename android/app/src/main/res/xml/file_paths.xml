@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    FileProvider 的可见范围（M15）。
+
+    只开放 cacheDir/exports 一个目录：导出包在这里生成，分享面板需要一个
+    content:// URI 才能把它交给别的应用（API 24 起禁止跨应用传 file://）。
+    范围刻意收窄 —— 整个 cacheDir 或 filesDir 暴露出去等于把私有数据
+    （数据库、附件、草稿）都摆在了 URI 可指的位置上。
+-->
+<paths>
+    <cache-path
+        name="exports"
+        path="exports/" />
+
+    <!--
+        附件（2026-10-24）：详情页要把附件交给系统应用打开（PDF 阅读器、相册、播放器）。
+        只开 files/assets 一个子目录，不是整个 filesDir —— 后者会把数据库、草稿一并暴露。
+        由 RecordDetailScreen 通过 FileProvider 生成 content:// + 一次性读授权。
+    -->
+    <files-path
+        name="assets"
+        path="assets/" />
+</paths>

@@ -1,0 +1,12 @@
+# Keep source files LF everywhere so the Android shell script and CI behave identically
+# on Windows, macOS and Linux. Windows-only scripts keep CRLF.
+* text=auto eol=lf
+
+*.bat text eol=crlf
+*.ps1 text eol=crlf
+
+*.png binary
+*.jpg binary
+*.jks binary
+*.keystore binary
+*.jar binary

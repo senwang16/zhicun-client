@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    小组件元数据（B3）。三个按钮一行：
+    - 180dp 宽约等于 3x1 格；API 31+ 用 targetCellWidth/Height 精确声明，
+      旧版本回落到 minWidth/minHeight。
+    - updatePeriodMillis=0：内容是静态按钮，不需要周期刷新；
+      只有布局变化（发版）时系统才会重新 onUpdate。
+    - resizeMode=horizontal：竖向拉伸只会拉高按钮留白，不开放。
+-->
+<appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:minWidth="180dp"
+    android:minHeight="40dp"
+    android:targetCellWidth="3"
+    android:targetCellHeight="1"
+    android:resizeMode="horizontal"
+    android:updatePeriodMillis="0"
+    android:initialLayout="@layout/widget_quick_capture"
+    android:widgetCategory="home_screen"
+    tools:ignore="UnusedAttribute" />

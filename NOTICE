@@ -1,0 +1,73 @@
+ZhiCun (智存)
+Copyright 2026 The ZhiCun Authors
+
+This product is licensed under the Apache License, Version 2.0. See the LICENSE
+file for the full terms.
+
+-------------------------------------------------------------------------------
+Third-party components included in or used by this distribution
+-------------------------------------------------------------------------------
+
+The Android application includes the following open-source components. Each is
+licensed under the terms declared by its own project; the Apache License 2.0 of
+ZhiCun does not override those terms.
+
+  * AndroidX libraries (Core, Lifecycle, Activity, Navigation, Room, WorkManager,
+    Compose UI, Material3)
+    Copyright The Android Open Source Project
+    Apache License 2.0
+
+  * Kotlin standard library, kotlinx.coroutines, kotlinx.serialization
+    Copyright JetBrains s.r.o.
+    Apache License 2.0
+
+  * Dagger / Hilt
+    Copyright Google LLC
+    Apache License 2.0
+
+  * OkHttp and MockWebServer
+    Copyright Square, Inc.
+    Apache License 2.0
+
+  * Coil
+    Copyright Coil contributors
+    Apache License 2.0
+
+  * jsoup
+    Copyright Jonathan Hedley
+    MIT License
+
+  * kizitonwose compose-calendar
+    Copyright Kizito Nwose
+    MIT License
+
+  * Robolectric, JUnit, Turbine (test-time only, not shipped in the APK)
+    Apache License 2.0 / Eclipse Public License 1.0
+
+-------------------------------------------------------------------------------
+Proprietary component (NOT covered by the Apache License 2.0)
+-------------------------------------------------------------------------------
+
+  * Google ML Kit Text Recognition (Chinese model), including the bundled model
+    files shipped inside the APK.
+    Copyright Google LLC.
+    Governed by the Google ML Kit Terms of Service and the Google APIs Terms of
+    Service, not by the Apache License 2.0. Redistributing a build that contains
+    this model means accepting those terms. If you build a variant without ML
+    Kit OCR, remove the dependency and this notice together.
+
+-------------------------------------------------------------------------------
+Official gateway (not distributed with this repository)
+-------------------------------------------------------------------------------
+
+The official AI gateway is operated privately and its source is not part of this
+repository or of the distributed APK. It is built with wrangler, workerd,
+TypeScript, Vitest and MSW, which are development or build-time dependencies
+distributed under their own licenses (Apache License 2.0 or MIT). They are
+installed with npm and are not vendored into this repository.
+
+-------------------------------------------------------------------------------
+
+The names "ZhiCun" and "智存", and the application icon, are project marks and
+are not licensed under the Apache License 2.0 except for reasonable, customary
+use in describing the origin of the work.

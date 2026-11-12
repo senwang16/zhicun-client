@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    数据提取规则（API 31+，2026-10-22 审查轮补）。
+
+    `android:allowBackup="false"` 只覆盖到 Android 11；Android 12 起备份与
+    "设备间迁移"（D2D）分别由本文件的 cloud-backup / device-transfer 两组规则控制。
+    不写这个文件时，M14 隐私说明里"不参与系统备份"的承诺在 12+ 上不再成立
+    （见 M14 已知限制 4）—— 这里两组规则都排除全部数据域，把承诺补实。
+
+    排除全部域是刻意的：本 App 的数据属于"个人资料库"，导出由用户主动触发（M15），
+    不交给系统备份通道。
+-->
+<data-extraction-rules>
+    <cloud-backup>
+        <exclude
+            domain="root"
+            path="." />
+        <exclude
+            domain="file"
+            path="." />
+        <exclude
+            domain="database"
+            path="." />
+        <exclude
+            domain="sharedpref"
+            path="." />
+        <exclude
+            domain="external"
+            path="." />
+    </cloud-backup>
+    <device-transfer>
+        <exclude
+            domain="root"
+            path="." />
+        <exclude
+            domain="file"
+            path="." />
+        <exclude
+            domain="database"
+            path="." />
+        <exclude
+            domain="sharedpref"
+            path="." />
+        <exclude
+            domain="external"
+            path="." />
+    </device-transfer>
+</data-extraction-rules>

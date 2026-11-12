@@ -1,0 +1,61 @@
+# ── Android / Gradle ────────────────────────────────────────────────
+*.apk
+*.aar
+*.aab
+*.ap_
+*.dex
+*.class
+bin/
+gen/
+out/
+build/
+.gradle/
+.kotlin/
+buildOutputCleanup/
+local.properties
+proguard/
+.navigation/
+captures/
+*.iml
+.idea/
+.cxx/
+
+# ── 签名与 Firebase 配置（含密钥，不入库）───────────────────────────
+*.jks
+*.keystore
+google-services.json
+firebase的指纹.txt
+
+# ── 日志 ────────────────────────────────────────────────────────────
+*.log
+
+# ── 密钥 / 环境变量 ─────────────────────────────────────────────────
+*.env
+.dev.vars
+.dev.vars.*
+# 模板文件只含占位符，必须入库
+!.dev.vars.example
+
+# ── Node / Wrangler ─────────────────────────────────────────────────
+node_modules/
+.wrangler/
+.tmp/
+dist/
+# 真实部署配置含账号域名与 D1 database_id，不入库；模板见 server/wrangler.example.toml
+wrangler.toml
+!server/wrangler.example.toml
+
+# ── 本地工具与验证现场 ──────────────────────────────────────────────
+.vscode/
+.trae/
+.trae-html-share-packages/
+.screenshots/
+.arts/
+.merkle-snapshot.json
+test/verify-*/
+test/ui-review-*/
+
+# ── 系统文件 ────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+desktop.ini

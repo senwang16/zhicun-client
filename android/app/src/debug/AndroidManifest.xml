@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    debug 专用 Manifest（不参与 release 合并）。
+    只做一件事：暴露 DebugSeedActivity，供 adb 触发灌示例数据。
+    不导出到 launcher，也不出现在最近任务里。
+-->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <application>
+
+        <activity
+            android:name=".debug.DebugSeedActivity"
+            android:excludeFromRecents="true"
+            android:exported="true"
+            android:noHistory="true"
+            android:theme="@style/Theme.ZhiCun" />
+
+    </application>
+
+</manifest>

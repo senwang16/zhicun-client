@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    小组件布局（B3）。RemoteViews 只支持 FrameLayout / LinearLayout / RelativeLayout
+    与少数普通控件，这里用 FrameLayout 包一层横向 LinearLayout（图标在上、文字在下）。
+    颜色固定深底白字：RemoteViews 拿不到 Compose 主题，跟随日/夜主题需要
+    另做两套 layout + onAppWidgetOptionsChanged 重挂，三个按钮不值得这个复杂度。
+    图标用框架 `android:drawableTop`：RemoteViews 只认得框架 TextView，AppCompat 的
+    `app:drawableTopCompat` 在这里既不被识别也不会生效，故 lint 的
+    UseCompatTextViewDrawableXml 在本文件抑制（不是疏忽，是 RemoteViews 的边界）。
+
+    垂直居中（2026-10-24 用户反馈"内容特别靠上"）：根 FrameLayout + 内层
+    `layout_gravity=center_vertical` 是 RemoteViews 里最稳的做法 —— 直接给 LinearLayout
+    设 gravity=center 在部分桌面（尤其荣耀/鸿蒙桌面）被拉高时仍会贴顶。
+    `UselessParent` 同属误报：RemoteViews 没有 merge，居中必须靠外层 gravity。
+-->
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/widget_background"
+    android:paddingHorizontal="4dp"
+    android:paddingVertical="6dp"
+    tools:ignore="UseCompatTextViewDrawableXml,UselessParent">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center_vertical"
+        android:orientation="horizontal"
+        android:gravity="center"
+        android:baselineAligned="false">
+
+        <TextView
+            android:id="@+id/widget_button_text"
+            style="@style/QuickWidgetButton"
+            android:drawableTop="@drawable/ic_action_text"
+            android:text="@string/floating_action_text" />
+
+        <TextView
+            android:id="@+id/widget_button_voice"
+            style="@style/QuickWidgetButton"
+            android:drawableTop="@drawable/ic_action_voice"
+            android:text="@string/floating_action_voice" />
+
+        <TextView
+            android:id="@+id/widget_button_inbox"
+            style="@style/QuickWidgetButton"
+            android:drawableTop="@drawable/ic_action_inbox"
+            android:text="@string/floating_action_inbox" />
+    </LinearLayout>
+</FrameLayout>

@@ -1,0 +1,250 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <!--
+        权限声明，对应 ARCHITECTURE.md §7。
+        M1 仅声明，不在启动时请求；实际运行时请求时机由 M4/M9/M13 分别实现。
+
+        2026-10-22 审查轮：**不声明** READ_EXTERNAL_STORAGE / READ_MEDIA_IMAGES。
+        图片与文件一律走系统 Photo Picker（PickVisualMedia，API 33+）或 SAF
+        （ACTION_OPEN_DOCUMENT，低版本回退），分享进来的 URI 自带临时读授权 ——
+        三种访问都由系统按次授予，本应用不需要媒体读取权限（见 ExternalAssetImporterImpl
+        类注释的同一结论）。少声明一个敏感权限，隐私界面与商店审核都少一处待解释项。
+    -->
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <!--
+        M13：气泡是"specialUse"类型的前台服务（系统没有为"常驻悬浮快捷键"设专门类型）。
+        必须与 service 标签上的 foregroundServiceType 一起声明，缺一条会在
+        startForeground 时抛 SecurityException / MissingForegroundServiceTypeException。
+    -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
+    <!--
+        悬浮长按录音（2026-10-26）：录音期间在同一前台服务上叠加 microphone 类型。
+        API 34+ 必须单独声明这条权限，否则 startForeground(…, MICROPHONE) 会抛
+        SecurityException（与 SPECIAL_USE 同理：权限与类型必须成对声明）。
+    -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MICROPHONE" />
+    <!--
+        截图收录（2026-10-27）：MediaProjection 在 API 34+ 要求宿主前台服务声明
+        mediaProjection 类型；权限与 foregroundServiceType 必须成对出现。
+        API 29–33 不需要这条权限，声明在低版本上会被忽略。
+    -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PROJECTION" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <!--
+        开机自启（2026-10-24）：悬浮气泡是前台服务，但前台服务不跨重启、也不跨应用更新。
+        没有这条权限时，手机重启或覆盖安装之后气泡会永久消失，直到用户手动打开一次 App。
+        注意它只让应用"知道开机了"，能不能真的在前台服务上恢复由系统对 BOOT_COMPLETED /
+        MY_PACKAGE_REPLACED 的豁免规则决定（见 BootCompletedReceiver 的注释）。
+    -->
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+
+    <!--
+        备份策略（2026-10-22 审查轮补齐）：
+        - allowBackup=false：挡住默认备份通道；
+        - fullBackupContent（API 23–30）与 dataExtractionRules（API 31+）两组规则**都排除全部数据域**，
+          两者成对声明，M14 隐私说明里"不参与系统备份"的承诺才在 minSdk 26 → targetSdk 36
+          全区间成立（此前只有 allowBackup，Android 12+ 的"设备间迁移"不受它控制）。
+    -->
+    <application
+        android:name=".ZhiCunApplication"
+        android:allowBackup="false"
+        android:dataExtractionRules="@xml/data_extraction_rules"
+        android:fullBackupContent="@xml/backup_rules"
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/app_name"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.ZhiCun">
+
+        <!--
+            WorkManager 改为按需初始化（M6）。
+            默认由 androidx.startup 的 InitializationProvider 在应用启动时初始化，
+            那样会抢在 HiltWorkerFactory 就绪之前建好 Configuration，Worker 拿不到注入依赖。
+            移除该 meta-data 后，WorkManager 在首次 getInstance 时读取
+            ZhiCunApplication 的 Configuration.Provider 完成初始化。
+        -->
+        <provider
+            android:name="androidx.startup.InitializationProvider"
+            android:authorities="${applicationId}.androidx-startup"
+            android:exported="false"
+            tools:node="merge">
+            <meta-data
+                android:name="androidx.work.WorkManagerInitializer"
+                tools:node="remove" />
+        </provider>
+
+        <activity
+            android:name=".MainActivity"
+            android:exported="true"
+            android:launchMode="singleTop"
+            android:theme="@style/Theme.ZhiCun.Starting"
+            android:windowSoftInputMode="adjustResize">
+            <!--
+                launchMode=singleTop：气泡/通知/小组件三个外部入口都用
+                EXTRA_START_ROUTE 复用本 Activity 跳页（onNewIntent → 路由流）。
+                standard 模式下 CLEAR_TOP 撞上"实例已在栈顶"时系统只把任务带到
+                前台、不回调 onNewIntent（实测 result=START_TASK_TO_FRONT），
+                表现为"点小组件没反应/回到旧页面"。singleTop 保证命中栈顶时
+                一定走 onNewIntent，路由参数才有着落。
+            -->
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <!--
+            系统分享接收（M4）。
+            - 无界面：透明主题 + noHistory + excludeFromRecents，处理完立刻 finish，把用户交还给来源 App。
+            - taskAffinity 置空：不并入主任务栈，避免"返回"回到智存主界面。
+            - 声明的 MIME 即"愿意接收"的范围；未列出的类型系统不会把智存放进分享面板，
+              但仍保留了运行时的兜底提示（部分发送方用 */* 广播）。
+        -->
+        <activity
+            android:name=".service.ShareReceiverActivity"
+            android:excludeFromRecents="true"
+            android:exported="true"
+            android:noHistory="true"
+            android:taskAffinity=""
+            android:theme="@style/Theme.ZhiCun.ShareReceiver">
+            <intent-filter>
+                <action android:name="android.intent.action.SEND" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="text/plain" />
+                <data android:mimeType="text/html" />
+                <data android:mimeType="image/*" />
+                <data android:mimeType="application/pdf" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.SEND_MULTIPLE" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="image/*" />
+                <data android:mimeType="application/pdf" />
+            </intent-filter>
+        </activity>
+
+        <!--
+            导出包分享（M15）。
+            导出的 ZIP 在 cacheDir/exports，API 24 起不能跨应用传 file:// URI，
+            必须由 FileProvider 换成 content:// + 临时读权限。可见范围由
+            res/xml/file_paths.xml 限定为那一个目录。
+        -->
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.fileprovider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths" />
+        </provider>
+
+        <!--
+            开机 / 覆盖安装后恢复悬浮气泡（2026-10-24）。
+            - exported=false：两条广播都由系统（system UID）投递，系统可以送达未导出的组件；
+              对外导出会让任意应用伪造一个 BOOT_COMPLETED 把气泡弹出来。
+            - 不接 LOCKED_BOOT_COMPLETED：direct-boot 阶段读不到 CE 存储里的用户开关。
+        -->
+        <receiver
+            android:name=".service.BootCompletedReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+            </intent-filter>
+        </receiver>
+
+        <!--
+            悬浮气泡入口（M13）。
+            - exported=false：只由本应用的 FloatingBubbleController 启停。
+            - foregroundServiceType=specialUse：系统没有"悬浮快捷键"这一类型，
+              按官方要求走 specialUse 并在 property 里如实写明用途。
+            - stopWithTask=false：划掉最近任务不结束服务。这本来就是默认值，显式写出来，
+              避免将来清单合并或改动把它悄悄改掉（2026-10-24 用户实测荣耀 MagicOS）。
+        -->
+        <service
+            android:name=".service.FloatingBubbleService"
+            android:exported="false"
+            android:foregroundServiceType="specialUse|microphone|mediaProjection"
+            android:stopWithTask="false">
+            <property
+                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="floating_quick_capture_bubble" />
+        </service>
+
+        <!--
+            "存剪贴板"中转页（M13）。
+            Android 10 起后台应用读不到剪贴板，只有前台 Activity 或默认输入法可以，
+            因此点气泡后先起这个透明页、在它的前台窗口里读一次，读完立刻 finish。
+            与分享接收页同一套去界面化的声明，用户看不到它。
+        -->
+        <activity
+            android:name=".service.ClipboardCaptureActivity"
+            android:excludeFromRecents="true"
+            android:exported="false"
+            android:noHistory="true"
+            android:taskAffinity=""
+            android:theme="@style/Theme.ZhiCun.ShareReceiver" />
+
+        <!--
+            麦克风权限中转页（2026-10-26）。
+            悬浮服务没有 Activity、无法直接弹运行时权限框；长按录音而 RECORD_AUDIO 未授予时
+            由本页拉一次系统权限框，拿到结果立刻 finish。同样去界面化。
+        -->
+        <activity
+            android:name=".service.MicPermissionProxyActivity"
+            android:excludeFromRecents="true"
+            android:exported="false"
+            android:noHistory="true"
+            android:taskAffinity=""
+            android:theme="@style/Theme.ZhiCun.ShareReceiver" />
+
+        <!--
+            截图中转页（2026-10-27）。
+            MediaProjection 的授权对话框是外部 Activity，必须由本应用的一个 Activity
+            startActivityForResult 拉起并接收结果 —— 悬浮服务没有这个能力。
+            不能声明 noHistory：授权对话框打开期间本页会失去前台，noHistory 会让它被回收，
+            返回时拿不到 result。excludeFromRecents 保证用户不会在最近任务里看到它。
+
+            下面的 SnapshotViewerActivity 不属于本次改动，保持原样。
+        -->
+        <activity
+            android:name=".service.ScreenCaptureActivity"
+            android:excludeFromRecents="true"
+            android:exported="false"
+            android:taskAffinity=""
+            android:theme="@style/Theme.ZhiCun.ShareReceiver" />
+
+        <!--
+            snapshot viewer（M7）：只由详情页的"查看快照"入口拉起，路径经 Intent extra 传入。
+            WebView 的安全开关在 Activity 里显式全禁（禁脚本/禁 file/禁网络加载），
+            这里不需要额外声明。
+        -->
+        <activity
+            android:name=".presentation.snapshot.SnapshotViewerActivity"
+            android:exported="false"
+            android:label="@string/snapshot_viewer_title" />
+
+        <!--
+            桌面小组件（B3）：三个快捷按钮（新建文字 / 新建语音 / 打开收件箱）。
+            exported=false：APPWIDGET_UPDATE 只由系统（AppWidgetService）投递，
+            系统可以送达未导出的 receiver；不开放给任意应用触发。
+            updatePeriodMillis=0，见 res/xml/widget_quick_capture_info.xml。
+        -->
+        <receiver
+            android:name=".widget.QuickCaptureWidgetProvider"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_quick_capture_info" />
+        </receiver>
+    </application>
+
+</manifest>
