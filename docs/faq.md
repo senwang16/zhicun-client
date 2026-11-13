@@ -107,9 +107,12 @@ privately by the maintainer; end users do not need it because the client can cal
 OpenAI-compatible provider directly. There is no self-hosting guide in this repository.
 
 **Is the official service free?**
-It is currently offered free of charge with gateway-side rate limits. The app itself enforces
-no billing and no record quota; if a quota or paid tier is introduced later, it will be
-documented in the app and in `CHANGELOG.md` before it takes effect.
+It is a **free trial**: the gateway applies per-install, per-network and global daily limits
+(the app enforces no local record quota). The app turns those responses into a terminal
+"trial used up / daily quota reached" message that points at configuring your own provider.
+If a paid tier is added later, it will be documented in the app and in `CHANGELOG.md` before it
+takes effect. Configuring your own OpenAI-compatible or Anthropic provider is never limited by
+the official quota.
 
 **Can I use the code commercially?**
 Yes. ZhiCun is licensed under the Apache License 2.0, which permits commercial use,
