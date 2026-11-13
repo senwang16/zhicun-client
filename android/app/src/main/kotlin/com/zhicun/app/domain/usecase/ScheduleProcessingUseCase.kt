@@ -10,6 +10,8 @@ import com.zhicun.app.domain.ai.AiGatewaySettings
 import com.zhicun.app.domain.repository.ProcessingJobRepository
 import com.zhicun.app.domain.repository.RecordRepository
 import com.zhicun.app.domain.settings.AiSettings
+import com.zhicun.app.domain.settings.DefaultLanguagePreference
+import com.zhicun.app.domain.settings.LanguagePreference
 import com.zhicun.app.domain.settings.CloudUploadGate
 import com.zhicun.app.domain.worker.ProcessingJobTargets
 import com.zhicun.app.domain.worker.ProcessingScheduler
@@ -40,6 +42,7 @@ class ScheduleProcessingUseCase @Inject constructor(
     private val recordRepository: RecordRepository,
     private val aiSettings: AiSettings,
     private val gatewaySettings: AiGatewaySettings,
+    private val languagePreference: LanguagePreference = DefaultLanguagePreference,
 ) {
 
     /**
@@ -57,6 +60,8 @@ class ScheduleProcessingUseCase @Inject constructor(
             gatewayConfigured = gatewaySettings.isConfigured,
             record = recordRepository.gateRecord(record),
         ) != null
+        // 派发时的输出语言快照（P11-07）：之后用户切语言不影响这次任务与它的自动重试。
+        val language = languagePreference.uiLanguage().code
         var blockedCloudJob = false
 
         jobsFor(record.type).forEach { jobType ->
@@ -68,7 +73,7 @@ class ScheduleProcessingUseCase @Inject constructor(
             val existing = jobRepository.getByRecordAndType(record.id, jobType)
             when {
                 existing == null -> {
-                    jobRepository.insert(newJob(record.id, jobType))
+                    jobRepository.insert(newJob(record.id, jobType, language))
                     scheduler.enqueue(record.id, jobType)
                 }
 
@@ -100,7 +105,7 @@ class ScheduleProcessingUseCase @Inject constructor(
      */
     internal fun jobsFor(type: RecordType): List<JobType> = ProcessingJobTargets.of(type)
 
-    private fun newJob(recordId: String, jobType: JobType) = ProcessingJob(
+    private fun newJob(recordId: String, jobType: JobType, language: String) = ProcessingJob(
         id = UUID.randomUUID().toString(),
         recordId = recordId,
         jobType = jobType,
@@ -111,5 +116,6 @@ class ScheduleProcessingUseCase @Inject constructor(
         errorCategory = null,
         startedAt = null,
         finishedAt = null,
+        outputLanguage = language,
     )
 }

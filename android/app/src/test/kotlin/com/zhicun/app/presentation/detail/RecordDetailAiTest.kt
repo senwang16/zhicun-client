@@ -33,7 +33,7 @@ import org.robolectric.annotation.Config
  * 而是**用户没同意上传**。因此单独断言横幅文案与确认按钮。
  */
 @RunWith(RobolectricTestRunner::class)
-@Config(qualifiers = "w411dp-h891dp")
+@Config(qualifiers = "zh-rCN-w411dp-h891dp")
 class RecordDetailAiTest {
 
     @get:Rule

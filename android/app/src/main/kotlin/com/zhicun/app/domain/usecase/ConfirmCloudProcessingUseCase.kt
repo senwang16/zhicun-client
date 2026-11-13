@@ -17,6 +17,8 @@ import com.zhicun.app.domain.repository.ProcessingJobRepository
 import com.zhicun.app.domain.repository.RecordRepository
 import com.zhicun.app.domain.settings.AiSettings
 import com.zhicun.app.domain.settings.CloudUploadGate
+import com.zhicun.app.domain.settings.DefaultLanguagePreference
+import com.zhicun.app.domain.settings.LanguagePreference
 import com.zhicun.app.domain.worker.ProcessingJobTargets
 import com.zhicun.app.domain.worker.ProcessingScheduler
 import java.util.UUID
@@ -75,6 +77,7 @@ class ConfirmCloudProcessingUseCase @Inject constructor(
     private val aiSettings: AiSettings,
     private val gatewaySettings: AiGatewaySettings,
     private val confirmWebFetch: ConfirmWebFetchUseCase,
+    private val languagePreference: LanguagePreference = DefaultLanguagePreference,
 ) {
 
     /**
@@ -92,6 +95,10 @@ class ConfirmCloudProcessingUseCase @Inject constructor(
         val cloudJobs = ProcessingJobTargets.of(record.type)
             .filter { it in ProcessingJobTargets.CLOUD_JOBS }
         if (cloudJobs.isEmpty()) return false
+
+        // 确认即一次新的派发：语言按用户此刻选择快照（P11-07），
+        // 否则英文界面下确认上传会产出中文摘要。
+        val language = languagePreference.uiLanguage().code
 
         // 先改记录再排任务：界面订阅的是记录状态，这样"点了确认"立刻有反馈；
         // 即使后面 enqueue 失败，下次启动补投还能看到 QUEUED 的行。
@@ -142,7 +149,7 @@ class ConfirmCloudProcessingUseCase @Inject constructor(
             }
 
             if (existing == null) {
-                jobRepository.insert(newJob(recordId, jobType))
+                jobRepository.insert(newJob(recordId, jobType, language))
             } else {
                 jobRepository.updateStatus(
                     existing.copy(
@@ -154,6 +161,7 @@ class ConfirmCloudProcessingUseCase @Inject constructor(
                         errorCategory = null,
                         startedAt = null,
                         finishedAt = null,
+                        outputLanguage = language,
                     ),
                 )
             }
@@ -177,6 +185,7 @@ class ConfirmCloudProcessingUseCase @Inject constructor(
                         errorCategory = null,
                         startedAt = null,
                         finishedAt = null,
+                        outputLanguage = language,
                     ),
                 )
                 scheduler.reenqueue(recordId, jobType)
@@ -184,13 +193,14 @@ class ConfirmCloudProcessingUseCase @Inject constructor(
         return true
     }
 
-    private fun newJob(recordId: String, jobType: JobType) = ProcessingJob(
+    private fun newJob(recordId: String, jobType: JobType, language: String) = ProcessingJob(
         id = UUID.randomUUID().toString(),
         recordId = recordId,
         jobType = jobType,
         status = JobStatus.QUEUED,
         attempts = 0,
         maxAttempts = ProcessingJob.DEFAULT_MAX_ATTEMPTS,
+        outputLanguage = language,
     )
 
     /**

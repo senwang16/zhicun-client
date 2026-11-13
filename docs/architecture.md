@@ -41,14 +41,14 @@ without Robolectric.
 
 ## 2. Data model
 
-Room is the single source of truth (`data/local/AppDatabase.kt`, currently **v10**).
+Room is the single source of truth (`data/local/AppDatabase.kt`, currently **v11**).
 
 | Table | Purpose | Notes |
 |---|---|---|
 | `records` | One row per captured item | Soft delete (`is_deleted`), archive (`archived_at`), favorites/pin, sensitivity status, `record_revision` for optimistic edits, per-revision cloud/web confirmations |
 | `assets` | Attachment files | Private storage paths, MIME type, size, save status, original file name, order index |
-| `derived_contents` | Rebuildable AI/local derivatives | `(record_id, content_type, asset_id)` unique; `processor_version` records which pipeline produced it; vectors are stored here as Base64 float32 |
-| `processing_jobs` | One row per `(record_id, job_type)` | `QUEUED / RUNNING / DONE / FAILED / CANCELLED`, attempts, wait rounds, retry timing |
+| `derived_contents` | Rebuildable AI/local derivatives | `(record_id, content_type, asset_id)` unique; `processor_version` records which pipeline produced it; `output_language` on generated types (`TITLE`/`SUMMARY`/`TAGS`, v11); vectors are stored here as Base64 float32 |
+| `processing_jobs` | One row per `(record_id, job_type)` | `QUEUED / RUNNING / DONE / FAILED / CANCELLED`, attempts, wait rounds, retry timing, `output_language` dispatch snapshot (v11) |
 | `tags`, `record_tag_cross_ref` | User and AI tags | AI tags are replaced on re-processing; user tags are never silently removed |
 | `collection_members` | Records grouped into a collection | Composite key, position, snapshot fingerprint |
 | `search_history` | Recent queries, on-device only | Deduplicated, capped |
@@ -169,6 +169,36 @@ for that purpose.
 
 Keys and tokens are stored encrypted (AndroidKeyStore AES/GCM via `TokenCipher`) and are
 never read back into the UI or logged.
+
+### 6.1 UI language and AI output language
+
+The app has two language flows that share one setting but never trigger each other:
+
+```
+Settings → Language (中文 / English)
+        │  writes language_preference/ui_language (no network, no job)
+        ├─► UI resources: attachBaseContext (MainActivity, floating service,
+        │   transparent activities) + widget labels; Android 13+ LocaleManager sync
+        └─► AI output: read once at dispatch, snapshotted into
+            processing_jobs.output_language
+                └─► SummarizeWorker → ContentEnricher.enrich(text, language)
+                        ├─ official: {"text","language"} → gateway prompt
+                        └─ direct:   fixed instruction appended to system prompt
+```
+
+Rules that keep the two flows honest:
+
+- The first launch derives the language from the device (`zh*` → Chinese, anything else →
+  English) and **persists it immediately**; afterwards the system language is ignored.
+- Switching language is **local-only**: no request, no worker, no re-processing. Existing
+  results stay in the language they were generated in (`derived_contents.output_language`).
+- `SummarizeWorker` never reads the language preference. It reads the job snapshot, so an
+  automatic retry of a queued job cannot silently change language mid-way.
+- Manual retry / confirmation / re-enabling cloud AI take the **current** language and
+  overwrite the snapshot, which is the only path that produces a new-language result.
+- Original content is not language-tagged: OCR text, transcripts, web page text, snapshots
+  and file names are kept byte-for-byte. Only `TITLE` / `SUMMARY` / `TAGS` carry
+  `output_language`.
 
 ## 7. Web extraction
 

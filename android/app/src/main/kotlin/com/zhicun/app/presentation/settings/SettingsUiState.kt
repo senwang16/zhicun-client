@@ -2,6 +2,7 @@ package com.zhicun.app.presentation.settings
 
 import com.zhicun.app.domain.floating.KeepAliveStatus
 import com.zhicun.app.domain.ai.ProviderProtocol
+import com.zhicun.app.domain.settings.AppLanguage
 
 /**
  * 设置页状态（M13 悬浮入口 / M14 云端 AI / M15 导出与清理）。
@@ -20,6 +21,7 @@ import com.zhicun.app.domain.ai.ProviderProtocol
  * @param keepAlive 后台常驻的系统条件（电池优化 / 通知 / App Standby）。null = 尚未读取，
  *   界面据此**什么都不显示**，而不是显示"一切正常"—— 后者是假消息
  * @param cloudAiEnabled 是否允许把内容发送到云端做 AI 处理（来自 prefs）
+ * @param language 当前界面语言（P11）；只影响界面资源与**之后**的 AI 生成，已生成内容不重跑
  * @param versionName 版本名（`BuildConfig`，M14 验收要求"版本号正确显示"）
  * @param versionCode 版本号
  * @param exportRunning 导出进行中（界面禁止重复点击）
@@ -53,6 +55,12 @@ data class SettingsUiState(
     val longPressRecord: Boolean = true,
     val keepAlive: KeepAliveStatus? = null,
     val cloudAiEnabled: Boolean = true,
+
+    /**
+     * 当前界面语言（P11）。只用于语言分组的选中态；切换本身零请求、零重生成，
+     * 已生成的 AI 结果保持原语言（R-I18N-02/05）。
+     */
+    val language: AppLanguage = AppLanguage.ZH,
 
     // ------------------------------------------------------------ AI Provider（P0）
     /** 用户是否选择官方服务（来自 prefs）。 */

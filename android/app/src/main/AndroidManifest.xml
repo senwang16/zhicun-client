@@ -57,8 +57,10 @@
         android:fullBackupContent="@xml/backup_rules"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
+        android:localeConfig="@xml/locales_config"
         android:supportsRtl="true"
-        android:theme="@style/Theme.ZhiCun">
+        android:theme="@style/Theme.ZhiCun"
+        tools:targetApi="33">
 
         <!--
             WorkManager 改为按需初始化（M6）。

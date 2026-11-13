@@ -93,10 +93,13 @@ fun InboxCalendarSheet(
         val scope = rememberCoroutineScope()
         // 读取 firstVisibleMonth 是状态读取：切月后标题与箭头边界自动重组
         val visibleMonth = calendarState.firstVisibleMonth.yearMonth
-        val monthFormatter = DateTimeFormatter.ofPattern(stringResource(R.string.inbox_calendar_month_pattern))
         // locale 经 LocalConfiguration 读取（可观察）：语言/地区变更时星期行与首日正确重组，
         // 也避免 NonObservableLocale（在 composable 里裸读 Locale.getDefault 是 lint 错误）
         val locale = LocalConfiguration.current.locales[0]
+        val monthPattern = stringResource(R.string.inbox_calendar_month_pattern)
+        val monthFormatter = remember(locale, monthPattern) {
+            DateTimeFormatter.ofPattern(monthPattern, locale)
+        }
         val firstDayOfWeek = remember(locale) { firstDayOfWeekFromLocale(locale) }
         val weekdayNames = remember(locale, firstDayOfWeek) {
             daysOfWeek(firstDayOfWeek).map { it.getDisplayName(TextStyle.NARROW, locale) }

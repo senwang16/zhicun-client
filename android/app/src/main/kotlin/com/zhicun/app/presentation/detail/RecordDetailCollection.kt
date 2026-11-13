@@ -31,6 +31,7 @@ import com.zhicun.app.presentation.common.displayTitle
 import com.zhicun.app.presentation.common.formatTimestamp
 import com.zhicun.app.presentation.common.recordTypeIconRes
 import com.zhicun.app.presentation.common.recordTypeLabelRes
+import com.zhicun.app.presentation.common.uiLocale
 
 /* 合集详情页的分区（M20）：过期提示 + 来源清单。 */
 
@@ -159,7 +160,7 @@ private fun CollectionMemberCard(
                         text = stringResource(
                             R.string.detail_collection_member_meta,
                             stringResource(recordTypeLabelRes(record.type)),
-                            formatTimestamp(record.createdAt),
+                            formatTimestamp(record.createdAt, uiLocale()),
                         ),
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,

@@ -1,11 +1,14 @@
 package com.zhicun.app
 
 import android.app.Application
+import android.content.res.Configuration as AndroidConfiguration
 import android.util.Log
 import androidx.hilt.work.HiltWorkerFactory
 import androidx.work.Configuration
+import com.zhicun.app.data.settings.AppLocaleManager
 import com.zhicun.app.di.ApplicationScope
 import com.zhicun.app.domain.export.ExportArchiveWriter
+import com.zhicun.app.widget.QuickCaptureWidgetProvider
 import com.zhicun.app.domain.usecase.CleanupDeletedRecordsUseCase
 import com.zhicun.app.domain.usecase.RecoverPendingJobsUseCase
 import com.zhicun.app.domain.usecase.RerunMultiAssetProcessingUseCase
@@ -63,6 +66,9 @@ class ZhiCunApplication : Application(), Configuration.Provider {
     lateinit var rerunMultiAssetProcessing: RerunMultiAssetProcessingUseCase
 
     @Inject
+    lateinit var localeManager: AppLocaleManager
+
+    @Inject
     @ApplicationScope
     lateinit var applicationScope: CoroutineScope
 
@@ -73,6 +79,9 @@ class ZhiCunApplication : Application(), Configuration.Provider {
 
     override fun onCreate() {
         super.onCreate()
+        // 必须在任何界面创建前完成（P11-01）：用户在系统"应用语言"里改过语言时，
+        // 先回写一次偏好，否则 Activity 的 attachBaseContext 读到的是旧值。
+        localeManager.syncFromSystemIfPresent()
         applicationScope.launch {
             // 先补清"已确认删除但没清完"的记录（2026-10-24 删除功能）。
             //
@@ -137,6 +146,21 @@ class ZhiCunApplication : Application(), Configuration.Provider {
                 Log.e(TAG, "多附件老记录补跑失败", e)
             }
         }
+    }
+
+    /**
+     * 进程存活期间用户在系统"应用语言"里改语言（P11）。
+     *
+     * 冷启动只同步一次，之后系统改语言会以配置变更到达这里；只读
+     * `LocaleManager.applicationLocales`（系统给本 App 指定的语言）回写偏好，
+     * 系统语言本身的变化不跟随（R-I18N-01）。Activity 由系统按新配置重建。
+     */
+    override fun onConfigurationChanged(newConfig: AndroidConfiguration) {
+        super.onConfigurationChanged(newConfig)
+        localeManager.syncFromSystemIfPresent()
+        // 系统侧改语言（Android 13+ 的应用语言页）不会触发设置页，桌面小组件要在这里重绘；
+        // 否则 RemoteViews 会停在旧语言，直到下次系统主动刷新
+        QuickCaptureWidgetProvider.refreshAll(this)
     }
 
     private companion object {

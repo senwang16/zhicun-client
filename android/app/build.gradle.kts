@@ -68,8 +68,8 @@ android {
         applicationId = "com.zhicun.app"
         minSdk = libs.versions.minSdk.get().toInt()
         targetSdk = libs.versions.targetSdk.get().toInt()
-        versionCode = 1
-        versionName = "0.1.0"
+        versionCode = 2
+        versionName = "0.1.1"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
@@ -138,6 +138,19 @@ android {
     buildFeatures {
         compose = true
         buildConfig = true
+    }
+
+    /**
+     * 运行时切语言（P11-02）要求两种语言资源都随包下发。
+     *
+     * App Bundle 默认按语言拆分（用户下载时只带系统语言），而本应用允许在设置页
+     * 任意切换中/英 —— 被拆走的语言在离线切换后会直接回退成默认英文。APK 分发不受
+     * 影响，但一旦改走 AAB/Play，这里必须关掉语言拆分。
+     */
+    bundle {
+        language {
+            enableSplit = false
+        }
     }
 
     // 说明：源码目录为 src/main/kotlin 与 src/test/kotlin（Kotlin 插件默认支持这两个目录，

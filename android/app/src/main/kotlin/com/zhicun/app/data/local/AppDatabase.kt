@@ -52,6 +52,8 @@ import com.zhicun.app.data.local.entity.TagEntity
  * - v9：新建 `search_history`（M21 搜索优化：最近搜索，只存本机、只存查询串）
  * - v10：新建 `embedding_meta`（开源改造 P1：记录每条向量的模型、维度、供应商来源），
  *   老向量按 `processor_version` 回填"模型已知、来源未知"
+ * - v11：`processing_jobs` 补 `output_language`（派发时的语言快照，可空）；
+ *   `derived_contents` 补 `output_language`（默认 `zh`，历史 AI 结果不重生成，P11-07）
  *
  * **升版本必须同时写迁移**（`data/local/migration/Migrations.kt`）并注册进
  * [AppDatabaseFactory]。禁止 `fallbackToDestructiveMigration()` —— 那会让用户升级一次
@@ -69,7 +71,7 @@ import com.zhicun.app.data.local.entity.TagEntity
         SearchHistoryEntity::class,
         EmbeddingMetaEntity::class,
     ],
-    version = 10,
+    version = 11,
     exportSchema = true,
 )
 @TypeConverters(Converters::class)

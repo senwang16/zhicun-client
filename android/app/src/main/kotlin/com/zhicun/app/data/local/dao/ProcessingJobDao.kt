@@ -55,7 +55,8 @@ interface ProcessingJobDao {
             next_retry_at = :nextRetryAt,
             error_category = :errorCategory,
             started_at = :startedAt,
-            finished_at = :finishedAt
+            finished_at = :finishedAt,
+            output_language = COALESCE(:outputLanguage, output_language)
         WHERE id = :id
         """,
     )
@@ -69,6 +70,13 @@ interface ProcessingJobDao {
         errorCategory: String?,
         startedAt: Long?,
         finishedAt: Long?,
+        /**
+         * 派发时的语言快照（P11-07）；`null` = 保留任务行已有值。
+         *
+         * 用 COALESCE 而不是直接覆盖：Worker 回写状态时传的是执行起点的快照，
+         * 不该把用户刚点"重新生成"写入的新语言冲掉。
+         */
+        outputLanguage: String?,
     )
 
     /**
@@ -92,7 +100,8 @@ interface ProcessingJobDao {
             next_retry_at = :nextRetryAt,
             error_category = :errorCategory,
             started_at = :startedAt,
-            finished_at = :finishedAt
+            finished_at = :finishedAt,
+            output_language = COALESCE(:outputLanguage, output_language)
         WHERE id = :id AND status = 'RUNNING' AND attempts = :expectedAttempts
         """,
     )
@@ -105,6 +114,8 @@ interface ProcessingJobDao {
         errorCategory: String?,
         startedAt: Long?,
         finishedAt: Long?,
+        /** 语言快照（P11-07）；`null` = 保留原值，不回写旧快照覆盖新派发。 */
+        outputLanguage: String?,
         expectedAttempts: Int,
     ): Int
 }

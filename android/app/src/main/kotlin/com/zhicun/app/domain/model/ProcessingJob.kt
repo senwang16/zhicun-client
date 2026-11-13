@@ -33,6 +33,14 @@ data class ProcessingJob(
     val errorCategory: String? = null,
     val startedAt: Long? = null,
     val finishedAt: Long? = null,
+    /**
+     * 派发时快照的输出语言（`zh` / `en`，P11-07 / R-I18N-04）。
+     *
+     * 为什么快照在任务行而不是执行时读偏好：任务排进队列后用户可能切语言，
+     * 自动重试/补投若跟着新语言走，同一次逻辑处理会产出两种语言的结果，
+     * 幂等键也会漂移。历史行没有该值时按中文（[com.zhicun.app.domain.settings.AppLanguage.fromCode]）。
+     */
+    val outputLanguage: String? = null,
 ) {
     companion object {
         /** 默认最大尝试次数（PRD §9.5 / M6 重试策略）。 */

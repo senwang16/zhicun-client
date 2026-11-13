@@ -5,6 +5,7 @@ import com.zhicun.app.domain.ai.AiProviderConfig
 import com.zhicun.app.domain.ai.GatewayRejectedException
 import com.zhicun.app.domain.ai.GatewayTransientException
 import com.zhicun.app.domain.ai.ProviderProtocol
+import com.zhicun.app.domain.settings.AppLanguage
 import com.zhicun.app.fake.FakeAiGatewaySettings
 import com.zhicun.app.fake.FakeAiProviderSettings
 import java.io.File
@@ -59,6 +60,10 @@ class DirectProvidersTest {
 
     /** 用户填的 API 地址（带版本号），与设置页的占位文案一致。 */
     private fun baseUrl(): String = server.url("/v1").toString().trimEnd('/')
+
+    /** 既有用例都验证中文输出语言；语言相关用例显式传 [AppLanguage.EN] 覆盖。 */
+    private suspend fun DirectChatProvider.enrich(text: String): com.zhicun.app.domain.ai.Enrichment =
+        enrich(text, AppLanguage.ZH)
 
     private fun providerSettings(
         chat: Boolean = false,
@@ -116,6 +121,32 @@ class DirectProvidersTest {
         assertEquals("标题", enrichment.title)
         assertEquals("摘要", enrichment.summary)
         assertEquals(listOf("标签A", "标签B"), enrichment.tags)
+    }
+
+    @Test
+    fun DirectChat_englishLanguage_appendsEnglishInstructionAndKeepsTextUntouched() = runBlocking {
+        server.enqueue(jsonResponse("""{"choices":[{"message":{"content":"{\"title\":\"T\"}"}}]}"""))
+        val provider = DirectChatProvider(http, providerSettings(chat = true))
+        val rawText = "一段中文原文，不能被翻译。"
+
+        provider.enrich(rawText, AppLanguage.EN)
+
+        val body = server.takeRequest().body.readUtf8()
+        assertTrue("英文模式必须追加英文语言指令", body.contains("Output language: English"))
+        assertTrue("中文语言指令不能同时出现（会自相矛盾）", !body.contains("简体中文"))
+        assertTrue("原文必须逐字进入 user 消息", body.contains(rawText))
+    }
+
+    @Test
+    fun DirectChat_chineseLanguage_appendsChineseInstruction() = runBlocking {
+        server.enqueue(jsonResponse("""{"choices":[{"message":{"content":"{\"title\":\"T\"}"}}]}"""))
+        val provider = DirectChatProvider(http, providerSettings(chat = true))
+
+        provider.enrich("English text stays as-is.", AppLanguage.ZH)
+
+        val body = server.takeRequest().body.readUtf8()
+        assertTrue("中文模式必须要求中文输出", body.contains("输出语言：简体中文"))
+        assertTrue(body.contains("English text stays as-is."))
     }
 
     @Test

@@ -17,6 +17,8 @@ import com.zhicun.app.domain.repository.ProcessingJobRepository
 import com.zhicun.app.domain.repository.RecordRepository
 import com.zhicun.app.domain.settings.AiSettings
 import com.zhicun.app.domain.settings.CloudUploadGate
+import com.zhicun.app.domain.settings.DefaultLanguagePreference
+import com.zhicun.app.domain.settings.LanguagePreference
 import com.zhicun.app.domain.worker.ProcessingJobTargets
 import com.zhicun.app.domain.worker.ProcessingScheduler
 import java.util.UUID
@@ -49,6 +51,7 @@ class ResumeCloudJobsUseCase @Inject constructor(
     private val scheduler: ProcessingScheduler,
     private val aiSettings: AiSettings,
     private val gatewaySettings: AiGatewaySettings,
+    private val languagePreference: LanguagePreference = DefaultLanguagePreference,
 ) {
 
     /**
@@ -58,6 +61,9 @@ class ResumeCloudJobsUseCase @Inject constructor(
         // 通路本身还不通（网关未配置）就不要扫库：扫出来也一条都投不出去
         if (cloudPathBlocked() != null) return 0
 
+        // 重开云端开关 = 一次新的派发：用当前界面语言刷新快照（P11-07），
+        // 否则英文界面下补投的任务会沿用旧的（或缺失的）中文快照。
+        val language = languagePreference.uiLanguage().code
         var resumed = 0
         records@ for (id in recordRepository.idsByProcessingStatus(ProcessingStatus.LOCAL_ONLY)) {
             val record = recordRepository.getById(id) ?: continue@records
@@ -88,7 +94,7 @@ class ResumeCloudJobsUseCase @Inject constructor(
                 val existing = jobRepository.getByRecordAndType(id, jobType)
                 if (existing?.status == JobStatus.DONE) return@forEach
                 if (existing == null) {
-                    jobRepository.insert(newJob(id, jobType))
+                    jobRepository.insert(newJob(id, jobType, language))
                 } else {
                     jobRepository.updateStatus(
                         existing.copy(
@@ -100,6 +106,7 @@ class ResumeCloudJobsUseCase @Inject constructor(
                             errorCategory = null,
                             startedAt = null,
                             finishedAt = null,
+                            outputLanguage = language,
                         ),
                     )
                 }
@@ -152,12 +159,13 @@ class ResumeCloudJobsUseCase @Inject constructor(
         )
     }
 
-    private fun newJob(recordId: String, jobType: JobType) = ProcessingJob(
+    private fun newJob(recordId: String, jobType: JobType, language: String) = ProcessingJob(
         id = UUID.randomUUID().toString(),
         recordId = recordId,
         jobType = jobType,
         status = JobStatus.QUEUED,
         attempts = 0,
         maxAttempts = ProcessingJob.DEFAULT_MAX_ATTEMPTS,
+        outputLanguage = language,
     )
 }

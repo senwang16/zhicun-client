@@ -65,7 +65,10 @@ use that URL; otherwise use a translation proxy.
 
 - **Summary**: the record's text (body, OCR text, transcript, web article, collection
   description + members), truncated to 4000 characters. The prompt is built on the device
-  and asks for `{"title","summary","tags"}`.
+  and asks for `{"title","summary","tags"}`. The request also carries the output language
+  (`language: "zh" | "en"` for the official gateway; a fixed instruction appended to the
+  system prompt for direct providers), so titles/summaries/tags follow the app language while
+  the original text is never translated.
 - **Embeddings**: the same record text truncated to 4000 characters, and on search, the
   query string itself.
 - **Speech-to-text**: the audio file bytes, up to 20 MB. Audio longer than 5 minutes is

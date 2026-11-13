@@ -1,5 +1,6 @@
 package com.zhicun.app.presentation.snapshot
 
+import android.content.Context
 import android.os.Bundle
 import android.util.Log
 import android.webkit.WebView
@@ -24,6 +25,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import com.zhicun.app.R
+import com.zhicun.app.localizedContext
 import dagger.hilt.android.AndroidEntryPoint
 import java.io.ByteArrayInputStream
 import java.io.File
@@ -54,6 +56,11 @@ import kotlinx.coroutines.withContext
  */
 @AndroidEntryPoint
 class SnapshotViewerActivity : ComponentActivity() {
+
+    /** 快照页的标题、关闭按钮与错误提示都取本页资源（P11-05）。 */
+    override fun attachBaseContext(newBase: Context) {
+        super.attachBaseContext(localizedContext(newBase))
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)

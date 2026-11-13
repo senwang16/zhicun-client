@@ -24,7 +24,7 @@ import org.robolectric.annotation.Config
  * 日期用 `LocalDate.now()`：弹层初始月就是当前月，不依赖滚动。
  */
 @RunWith(RobolectricTestRunner::class)
-@Config(qualifiers = "w411dp-h891dp")
+@Config(qualifiers = "zh-rCN-w411dp-h891dp")
 class InboxCalendarSheetTest {
 
     @get:Rule

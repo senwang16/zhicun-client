@@ -1,5 +1,6 @@
 package com.zhicun.app
 
+import android.content.Context
 import android.content.Intent
 import android.os.Bundle
 import android.util.Log
@@ -69,6 +70,17 @@ class MainActivity : ComponentActivity() {
 
     /** 每次进入前台只提示一次，防止用户在设置与主界面之间来回切时反复弹同一句。 */
     private var healthPrompted: Boolean = false
+
+    /**
+     * 界面语言必须在资源解析之前生效（P11-01）。
+     *
+     * `attachBaseContext` 早于 `onCreate` 与 Hilt 注入，此时只能直接读偏好 ——
+     * 拿不到 `AppLocaleManager` 注入实例。用户切语言后 `recreate()` 会重新走这里，
+     * 所以这是"切换立即生效"的唯一入口。
+     */
+    override fun attachBaseContext(newBase: Context) {
+        super.attachBaseContext(localizedContext(newBase))
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         // 系统级开屏（附录 T）：必须在 super.onCreate 之前调用 —— 它负责读开屏主题

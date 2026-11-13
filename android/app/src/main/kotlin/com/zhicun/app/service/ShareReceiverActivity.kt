@@ -1,10 +1,12 @@
 package com.zhicun.app.service
 
+import android.content.Context
 import android.os.Bundle
 import android.util.Log
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.lifecycle.lifecycleScope
+import com.zhicun.app.localizedContext
 import com.zhicun.app.service.share.MimeTypeLookup
 import com.zhicun.app.service.share.ShareFeedback
 import com.zhicun.app.service.share.ShareIntakeCoordinator
@@ -26,6 +28,11 @@ import kotlinx.coroutines.launch
  */
 @AndroidEntryPoint
 class ShareReceiverActivity : ComponentActivity() {
+
+    /** 分享结果的 Toast 必须跟随应用内语言，而不是系统语言（P11-05）。 */
+    override fun attachBaseContext(newBase: Context) {
+        super.attachBaseContext(localizedContext(newBase))
+    }
 
     @Inject
     lateinit var intake: ShareIntakeCoordinator

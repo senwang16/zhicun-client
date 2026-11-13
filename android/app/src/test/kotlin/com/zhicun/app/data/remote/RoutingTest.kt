@@ -6,6 +6,7 @@ import com.zhicun.app.domain.ai.Embedder
 import com.zhicun.app.domain.ai.Embedding
 import com.zhicun.app.domain.ai.Enrichment
 import com.zhicun.app.domain.ai.SpeechTranscriber
+import com.zhicun.app.domain.settings.AppLanguage
 import com.zhicun.app.fake.FakeAiProviderSettings
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
@@ -26,7 +27,7 @@ class RoutingTest {
 
     private class CountingContentEnricher(private val tag: String) : ContentEnricher {
         var calls = 0
-        override suspend fun enrich(text: String): Enrichment {
+        override suspend fun enrich(text: String, language: AppLanguage): Enrichment {
             calls++
             return Enrichment(title = tag, summary = null, tags = emptyList())
         }
@@ -67,7 +68,7 @@ class RoutingTest {
         val custom = CountingContentEnricher("custom")
         val router = RoutingContentEnricher(settings, official, custom)
 
-        val result = router.enrich("文本")
+        val result = router.enrich("文本", AppLanguage.ZH)
 
         assertEquals("official", result.title)
         assertEquals(1, official.calls)
@@ -81,7 +82,7 @@ class RoutingTest {
         val custom = CountingContentEnricher("custom")
         val router = RoutingContentEnricher(settings, official, custom)
 
-        assertEquals("custom", router.enrich("文本").title)
+        assertEquals("custom", router.enrich("文本", AppLanguage.ZH).title)
         assertEquals(0, official.calls)
     }
 
@@ -98,7 +99,7 @@ class RoutingTest {
         val custom = CountingContentEnricher("custom")
         val router = RoutingContentEnricher(settings, official, custom)
 
-        assertEquals("custom", router.enrich("文本").title)
+        assertEquals("custom", router.enrich("文本", AppLanguage.ZH).title)
     }
 
     @Test
@@ -108,7 +109,7 @@ class RoutingTest {
         val custom = CountingContentEnricher("custom")
         val router = RoutingContentEnricher(settings, official, custom)
 
-        router.enrich("文本")
+        router.enrich("文本", AppLanguage.ZH)
 
         assertEquals("两边都没配必须走官方，让「未配置」的报错语义准确", 1, official.calls)
     }

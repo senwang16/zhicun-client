@@ -32,7 +32,7 @@ import org.robolectric.annotation.Config
  * 失败时能立刻区分"UI 画错了"还是"数据没来"。
  */
 @RunWith(RobolectricTestRunner::class)
-@Config(qualifiers = "w411dp-h891dp")
+@Config(qualifiers = "zh-rCN-w411dp-h891dp")
 class InboxScreenTest {
 
     @get:Rule

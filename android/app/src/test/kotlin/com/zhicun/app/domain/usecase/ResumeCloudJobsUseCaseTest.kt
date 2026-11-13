@@ -8,11 +8,14 @@ import com.zhicun.app.domain.model.ProcessingJob
 import com.zhicun.app.domain.model.ProcessingStatus
 import com.zhicun.app.domain.model.RecordType
 import com.zhicun.app.domain.model.SensitivityStatus
+import com.zhicun.app.domain.settings.AppLanguage
+import com.zhicun.app.domain.settings.LanguagePreference
 import com.zhicun.app.fake.FakeAiGatewaySettings
 import com.zhicun.app.fake.FakeAiSettings
 import com.zhicun.app.fake.FakeAssetRepository
 import com.zhicun.app.fake.FakeCollectionRepository
 import com.zhicun.app.fake.FakeDerivedContentRepository
+import com.zhicun.app.fake.FakeLanguagePreference
 import com.zhicun.app.fake.FakeProcessingJobRepository
 import com.zhicun.app.fake.FakeProcessingScheduler
 import com.zhicun.app.fake.FakeRecordRepository
@@ -56,7 +59,10 @@ class ResumeCloudJobsUseCaseTest {
      * 不接的话 `recomputeProcessingStatus` 会读到"没有任务" → 状态又落回 `LOCAL_ONLY`，
      * 测试看着像生产代码没回写（M13 踩过的两路视图坑）。
      */
-    private fun useCase(records: FakeRecordRepository) = ResumeCloudJobsUseCase(
+    private fun useCase(
+        records: FakeRecordRepository,
+        language: LanguagePreference = FakeLanguagePreference(AppLanguage.ZH),
+    ) = ResumeCloudJobsUseCase(
         recordRepository = records,
         collectionRepository = FakeCollectionRepository(),
         jobRepository = jobRepository,
@@ -65,10 +71,36 @@ class ResumeCloudJobsUseCaseTest {
         scheduler = scheduler,
         aiSettings = aiSettings,
         gatewaySettings = gatewaySettings,
+        languagePreference = language,
     ).also {
         records.jobStatusProvider = { id ->
             jobRepository.jobs.values.filter { job -> job.recordId == id }.map { job -> job.status }
         }
+    }
+
+    @Test
+    fun Invoke_englishUi_refreshesLanguageSnapshotOnRevivedJob() = runTest {
+        val records = FakeRecordRepository(
+            listOf(testRecord(id = "r1", rawText = "一条笔记", processingStatus = ProcessingStatus.LOCAL_ONLY)),
+        )
+        jobRepository.insert(
+            ProcessingJob(
+                id = "job-1",
+                recordId = "r1",
+                jobType = JobType.SUMMARIZE,
+                status = JobStatus.CANCELLED,
+                attempts = 0,
+                outputLanguage = AppLanguage.ZH.code,
+            ),
+        )
+
+        useCase(records, FakeLanguagePreference(AppLanguage.EN))(now = 1_000L)
+
+        assertEquals(
+            "重开云端开关 = 新的派发，用当前语言刷新快照",
+            AppLanguage.EN.code,
+            jobRepository.getByRecordAndType("r1", JobType.SUMMARIZE)!!.outputLanguage,
+        )
     }
 
     @Test

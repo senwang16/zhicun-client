@@ -40,6 +40,8 @@ class ProcessingJobRepositoryImpl @Inject constructor(
         errorCategory = job.errorCategory,
         startedAt = job.startedAt,
         finishedAt = job.finishedAt,
+        // 派发时写入语言快照；执行期回写（job 来自库）传原值，COALESCE 保证不清空
+        outputLanguage = job.outputLanguage,
     )
 
     override suspend fun updateStatusIfRunning(job: ProcessingJob, expectedAttempts: Int): Boolean =
@@ -52,6 +54,7 @@ class ProcessingJobRepositoryImpl @Inject constructor(
             errorCategory = job.errorCategory,
             startedAt = job.startedAt,
             finishedAt = job.finishedAt,
+            outputLanguage = job.outputLanguage,
             expectedAttempts = expectedAttempts,
         ) > 0
 }

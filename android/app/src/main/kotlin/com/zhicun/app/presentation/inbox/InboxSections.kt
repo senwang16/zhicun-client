@@ -34,6 +34,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.zhicun.app.R
 import com.zhicun.app.presentation.common.RecordCard
+import com.zhicun.app.presentation.common.uiLocale
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 
@@ -55,10 +56,10 @@ internal fun dayGroupTitle(date: LocalDate): String {
     }
 }
 
-/** 日期显示格式（M月d日）收进资源：将来做多语言时只动 strings.xml。 */
+/** 日期显示格式收进资源，并按界面语言取 Locale：英文要 `Oct 29`，中文要 `10月29日`。 */
 @Composable
 private fun datePattern(): DateTimeFormatter =
-    DateTimeFormatter.ofPattern(stringResource(R.string.inbox_group_date_pattern))
+    DateTimeFormatter.ofPattern(stringResource(R.string.inbox_group_date_pattern), uiLocale())
 
 /**
  * 筛选行（M16）：左边"全部/收藏"（+ M19 的日期筛选 chip），右边"整理"入口。

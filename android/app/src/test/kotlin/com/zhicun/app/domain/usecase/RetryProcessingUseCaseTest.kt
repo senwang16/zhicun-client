@@ -6,8 +6,10 @@ import com.zhicun.app.domain.model.ProcessingJob
 import com.zhicun.app.domain.model.ProcessingStatus
 import com.zhicun.app.domain.model.RecordType
 import com.zhicun.app.domain.worker.ProcessingJobTargets
+import com.zhicun.app.domain.settings.AppLanguage
 import com.zhicun.app.fake.FakeAiGatewaySettings
 import com.zhicun.app.fake.FakeAiSettings
+import com.zhicun.app.fake.FakeLanguagePreference
 import com.zhicun.app.fake.FakeProcessingJobRepository
 import com.zhicun.app.fake.FakeProcessingScheduler
 import com.zhicun.app.fake.FakeRecordRepository
@@ -48,6 +50,37 @@ class RetryProcessingUseCaseTest {
             scheduler,
             FakeAiSettings(),
             FakeAiGatewaySettings(),
+        )
+    }
+
+    @Test
+    fun Retry_usesCurrentLanguage_notTheOldSnapshot() = runTest {
+        // 先按英文派发一次，再把界面切回中文
+        jobRepository.insert(
+            ProcessingJob(
+                id = "job-1",
+                recordId = recordId,
+                jobType = JobType.SUMMARIZE,
+                status = JobStatus.FAILED,
+                attempts = 3,
+                outputLanguage = AppLanguage.EN.code,
+            ),
+        )
+        val chinese = RetryProcessingUseCase(
+            recordRepository,
+            jobRepository,
+            scheduler,
+            FakeAiSettings(),
+            FakeAiGatewaySettings(),
+            FakeLanguagePreference(AppLanguage.ZH),
+        )
+
+        chinese(recordId, only = setOf(JobType.SUMMARIZE))
+
+        // R-I18N-06：手动重新生成使用**当前**语言，旧快照被覆盖
+        assertEquals(
+            AppLanguage.ZH.code,
+            jobRepository.getByRecordAndType(recordId, JobType.SUMMARIZE)!!.outputLanguage,
         )
     }
 

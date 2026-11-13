@@ -47,10 +47,11 @@ fun Record.displayTitle(): String? {
 /**
  * 兜底标题里的时间格式（2026-10-24）。
  *
- * 用 `MM-dd HH:mm` 而不是 [formatTimestamp] 的默认值：卡片标题只有一行，
- * 带上年份会把唯一能区分的"几点录的"挤出可视区；年份在详情页与排序里都能看到。
+ * 用紧凑档而不是详情页的完整格式：卡片标题只有一行，带上年份会把唯一能区分的
+ * "几点录的"挤出可视区；年份在详情页与排序里都能看到。具体 pattern 由
+ * [timestampPattern] 按语言给出（中文 `MM-dd HH:mm`，英文 `MMM d, h:mm a`）。
  */
-const val FALLBACK_TITLE_TIME_PATTERN = "MM-dd HH:mm"
+const val FALLBACK_TITLE_TIME_PATTERN: String = "MM-dd HH:mm"
 
 /**
  * [displayTitle] 返回 null 时，按记录类型给出的标题模板资源（含一个 `%1$s` 占位给时间）。
@@ -149,14 +150,51 @@ fun processingStatusLabelRes(status: ProcessingStatus): Int = when (status) {
 }
 
 /**
+ * 时间两档粒度（P11-04）。
+ *
+ * 分档而不是让调用方传 pattern：pattern 必须随语言变（英文 `Oct 29, 2026`，
+ * 中文 `2026-10-29`，R-I18N-12），散在调用点上迟早会漏一处、出现中英混排。
+ */
+enum class TimestampStyle {
+    /** 详情页等有整行宽度的地方：带年份。 */
+    FULL,
+
+    /** 卡片标题/副行：只有一行，带年份会把"几点录的"挤出可视区。 */
+    COMPACT,
+}
+
+/**
+ * 时间格式按语言取值（P11-04 / R-I18N-12）。
+ *
+ * - 中文沿用 `yyyy-MM-dd`：这是国内用户最熟悉、也最省宽度的写法；
+ * - 英文用 `Oct 29, 2026` 这类月名在前、逗号分隔的写法，时分用 12 小时制加 AM/PM；
+ * - 时长、体积等数字格式不随语言变（见 [formatDuration] / [formatFileSize]）。
+ */
+fun timestampPattern(style: TimestampStyle, locale: Locale): String {
+    val chinese = locale.language == "zh"
+    return when {
+        chinese && style == TimestampStyle.COMPACT -> FALLBACK_TITLE_TIME_PATTERN
+        chinese -> "yyyy-MM-dd HH:mm"
+        style == TimestampStyle.COMPACT -> "MMM d, h:mm a"
+        else -> "MMM d, yyyy · h:mm a"
+    }
+}
+
+/**
  * 时间显示。
  *
  * 用固定 pattern 而非 `DateUtils.getRelativeTimeSpanString`：相对时间（"3 分钟前"）
  * 会让列表在滚动时的心智负担变高（每次都要换算），且难以在测试里断言。
- * 时间用设备时区（`Locale.getDefault`），不做 UTC 硬编码。
+ *
+ * [locale] 必须由调用方显式给出（Compose 里用 `uiLocale()`）：本文件是纯 Kotlin，
+ * 读 `Locale.getDefault()` 会绕过用户的语言偏好，也让单测结果随机器而变。
+ * 时区仍用设备时区，不做 UTC 硬编码。
  */
-fun formatTimestamp(millis: Long, pattern: String = "yyyy-MM-dd HH:mm"): String =
-    SimpleDateFormat(pattern, Locale.getDefault()).format(Date(millis))
+fun formatTimestamp(
+    millis: Long,
+    locale: Locale,
+    style: TimestampStyle = TimestampStyle.FULL,
+): String = SimpleDateFormat(timestampPattern(style, locale), locale).format(Date(millis))
 
 /**
  * 时长显示（`mm:ss`，超过 1 小时自然是 `60:00` 这种分钟数）。

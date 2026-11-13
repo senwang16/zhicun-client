@@ -16,7 +16,9 @@ import com.zhicun.app.domain.floating.KeepAliveStatus
 import com.zhicun.app.domain.repository.EmbeddingRepository
 import com.zhicun.app.domain.repository.EmbeddingSpace
 import com.zhicun.app.domain.settings.AiSettings
+import com.zhicun.app.domain.settings.AppLanguage
 import com.zhicun.app.domain.settings.FeedbackLauncher
+import com.zhicun.app.domain.settings.UiLanguageSettings
 import com.zhicun.app.domain.usecase.CleanupDeletedRecordsUseCase
 import com.zhicun.app.domain.usecase.ReEmbedAllUseCase
 import com.zhicun.app.domain.usecase.ResumeCloudJobsUseCase
@@ -55,6 +57,7 @@ class SettingsViewModel @Inject constructor(
     private val cleanupDeletedRecords: CleanupDeletedRecordsUseCase,
     private val shareLauncher: ArchiveShareLauncher,
     private val resumeCloudJobs: ResumeCloudJobsUseCase,
+    private val uiLanguage: UiLanguageSettings,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(readState())
@@ -210,6 +213,30 @@ class SettingsViewModel @Inject constructor(
             }
         }
     }
+
+    // ------------------------------------------------------------ 界面语言（P11）
+
+    /**
+     * 切换界面语言（P11-02）。
+     *
+     * 只做两件事：写偏好、同步系统"应用语言"。**不**发请求、**不**排任务、
+     * **不**重算闸门 —— 已生成的结果保持原语言（R-I18N-02/05，切语言不是重生成）。
+     * 重建由 Activity 负责，但仅在系统不会自己重建时才需要（见 [recreateRequiredAfterSelect]）。
+     */
+    fun onLanguageSelected(language: AppLanguage) {
+        if (language == _uiState.value.language) return
+        uiLanguage.select(language)
+        _uiState.update { it.copy(language = language) }
+    }
+
+    /**
+     * 切语言后是否还要 `Activity.recreate()`。
+     *
+     * Android 13+ 写 `LocaleManager.applicationLocales` 由系统重建 Activity，
+     * 界面再调一次就是双重建（闪两下）：界面的判断依据在这里，不各自写 SDK 判断。
+     */
+    val recreateRequiredAfterSelect: Boolean
+        get() = uiLanguage.recreateRequiredAfterSelect
 
     // ------------------------------------------------------------ AI Provider（开源改造 P0）
 
@@ -507,6 +534,7 @@ class SettingsViewModel @Inject constructor(
         longPressRecord = settings.longPressRecord,
         keepAlive = readKeepAliveStatus(),
         cloudAiEnabled = aiSettings.cloudAiEnabled,
+        language = uiLanguage.current(),
         // 三组 Provider：只回填非机密字段，Key/令牌永远不进状态（见 SettingsUiState KDoc）
         useOfficialService = aiProviders.useOfficialService,
         officialBaseUrl = aiProviders.officialBaseUrl.orEmpty(),

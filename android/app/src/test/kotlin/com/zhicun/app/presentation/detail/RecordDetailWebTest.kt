@@ -31,7 +31,7 @@ import org.robolectric.annotation.Config
  * 预览图解码依赖真实文件，属真机验收项；这里只测"附件行存在时按钮/预览的渲染条件"。
  */
 @RunWith(RobolectricTestRunner::class)
-@Config(qualifiers = "w411dp-h891dp")
+@Config(qualifiers = "zh-rCN-w411dp-h891dp")
 class RecordDetailWebTest {
 
     @get:Rule

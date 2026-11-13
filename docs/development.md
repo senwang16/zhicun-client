@@ -56,6 +56,17 @@ integration only. **Never** inject tokens into a release build or CI.
 - **Comments explain why, not what.** The code base is comment-heavy on purpose: most comments
   record a decision and the failure mode it prevents. Keep that standard; a comment that
   restates the code is noise.
+- **User-visible text is a string resource.** `values/strings.xml` is the **English default**
+  (also the fallback), `values-zh/strings.xml` is Chinese. Do not hardcode user-visible text in
+  Composables, ViewModels, Services, notifications or Workers; add the key to both files and run
+  `python scripts/release/check-i18n-res.py`. Language names are the one exception: they are
+  written in their own language (`中文`, `English`).
+- **Never read `Locale.getDefault()` for formatting.** Use `uiLocale()` in Composables or take
+  a `Locale` parameter in pure functions; the app language may differ from the system.
+- **AI output language is explicit.** `ContentEnricher.enrich(text, language)` receives the
+  language snapshotted on the job at dispatch time; implementations must not read preferences or
+  infer language from the input. Generated results record `output_language`; original content
+  (OCR, transcripts, page text) must never be translated.
 - **KDoc is written in Chinese** for historical reasons. Public docs (README, `docs/`) are
   English with a Chinese mirror for the README.
 - Kotlin style: 4-space indent, no wildcard imports, expression bodies for one-liners,

@@ -31,6 +31,7 @@ import com.zhicun.app.presentation.common.ProcessingStatusBadge
 import com.zhicun.app.presentation.common.captureSourceLabelRes
 import com.zhicun.app.presentation.common.formatTimestamp
 import com.zhicun.app.presentation.common.recordTypeLabelRes
+import com.zhicun.app.presentation.common.uiLocale
 
 /**
  * 详情页正文（从上到下，2026-10 改版）：已删横幅 → **AI 摘要** → 原文 → 按记录类型的派生分区 → 整理 → 相关记录 → 来源 → 状态 → 附件。
@@ -303,8 +304,8 @@ internal fun DetailBody(
             )
             InfoRow(R.string.detail_label_source_app, record.sourceApp)
             InfoRow(R.string.detail_label_source_url, record.sourceUrl, clickableUrl = true)
-            InfoRow(R.string.detail_label_created_at, formatTimestamp(record.createdAt))
-            InfoRow(R.string.detail_label_updated_at, formatTimestamp(record.updatedAt))
+            InfoRow(R.string.detail_label_created_at, formatTimestamp(record.createdAt, uiLocale()))
+            InfoRow(R.string.detail_label_updated_at, formatTimestamp(record.updatedAt, uiLocale()))
         }
 
         SectionTitle(text = stringResource(R.string.detail_section_status))

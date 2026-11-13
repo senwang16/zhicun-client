@@ -6,6 +6,7 @@ import com.zhicun.app.domain.ai.Embedder
 import com.zhicun.app.domain.ai.Embedding
 import com.zhicun.app.domain.ai.Enrichment
 import com.zhicun.app.domain.ai.SpeechTranscriber
+import com.zhicun.app.domain.settings.AppLanguage
 
 /**
  * 官方 / 自定义的运行时路由（开源改造 P0）。
@@ -33,8 +34,12 @@ class RoutingContentEnricher(
     private val custom: ContentEnricher,
 ) : ContentEnricher {
 
-    override suspend fun enrich(text: String): Enrichment =
-        if (useOfficial()) official.enrich(text) else custom.enrich(text)
+    override suspend fun enrich(text: String, language: AppLanguage): Enrichment =
+        if (useOfficial()) {
+            official.enrich(text, language)
+        } else {
+            custom.enrich(text, language)
+        }
 
     private fun useOfficial(): Boolean =
         (settings.useOfficialService && settings.officialConfigured) ||

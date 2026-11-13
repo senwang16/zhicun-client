@@ -6,8 +6,10 @@ import com.zhicun.app.domain.model.ProcessingJob
 import com.zhicun.app.domain.model.ProcessingStatus
 import com.zhicun.app.domain.model.RecordType
 import com.zhicun.app.domain.model.SensitivityStatus
+import com.zhicun.app.domain.settings.AppLanguage
 import com.zhicun.app.fake.FakeAiGatewaySettings
 import com.zhicun.app.fake.FakeAiSettings
+import com.zhicun.app.fake.FakeLanguagePreference
 import com.zhicun.app.fake.FakeProcessingJobRepository
 import com.zhicun.app.fake.FakeProcessingScheduler
 import com.zhicun.app.fake.FakeRecordRepository
@@ -66,6 +68,30 @@ class ScheduleProcessingUseCaseTest {
         assertEquals(JobStatus.QUEUED, job.status)
         assertEquals(0, job.attempts)
         assertEquals(ProcessingJob.DEFAULT_MAX_ATTEMPTS, job.maxAttempts)
+    }
+
+    @Test
+    fun Invoke_englishUi_snapshotsEnglishOnEveryNewJob() = runTest {
+        val english = ScheduleProcessingUseCase(
+            jobRepository,
+            scheduler,
+            recordRepository,
+            FakeAiSettings(),
+            FakeAiGatewaySettings(),
+            FakeLanguagePreference(AppLanguage.EN),
+        )
+        val record = testRecord(id = "r-en", type = RecordType.IMAGE)
+
+        english(record)
+
+        // 任务行是输出语言的快照来源（SummarizeWorker 只读它，不再读偏好）
+        listOf(JobType.OCR, JobType.SUMMARIZE, JobType.EMBED).forEach { type ->
+            assertEquals(
+                "任务 $type 应记录派发时语言",
+                AppLanguage.EN.code,
+                jobRepository.getByRecordAndType("r-en", type)!!.outputLanguage,
+            )
+        }
     }
 
     @Test

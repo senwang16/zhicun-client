@@ -1,5 +1,7 @@
 package com.zhicun.app.domain.ai
 
+import com.zhicun.app.domain.settings.AppLanguage
+
 /**
  * 一次"内容增强"的结果（M11）。
  *
@@ -31,9 +33,12 @@ interface ContentEnricher {
 
     /**
      * @param text 待处理的正文（已由调用方拼接与截断）
+     * @param language 输出语言（R-I18N-04）。**必填**：由任务行快照决定，实现方不得
+     *   自行读偏好或按原文语言推断 —— 那正是"英文网页在中文界面下输出中文"要靠的判据。
+     *   原文、专有名词与引用始终原样保留，只有标题/摘要/标签跟随该语言。
      * @throws GatewayNotConfiguredException 网关未配置（终态）
      * @throws GatewayRejectedException 内容被拒 / 鉴权失败（终态）
      * @throws GatewayTransientException 网络或限流（可重试）
      */
-    suspend fun enrich(text: String): Enrichment
+    suspend fun enrich(text: String, language: AppLanguage): Enrichment
 }

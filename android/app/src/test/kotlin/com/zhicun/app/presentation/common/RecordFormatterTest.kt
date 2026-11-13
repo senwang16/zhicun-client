@@ -2,6 +2,7 @@ package com.zhicun.app.presentation.common
 
 import com.zhicun.app.domain.model.RecordType
 import com.zhicun.app.fake.testRecord
+import java.util.Locale
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
@@ -103,8 +104,27 @@ class RecordFormatterTest {
      */
     @Test
     fun FallbackTitleTimePattern_isMonthDayAndHourMinute() {
-        val text = formatTimestamp(1_700_000_000_000L, FALLBACK_TITLE_TIME_PATTERN)
+        val text = formatTimestamp(
+            1_700_000_000_000L,
+            Locale.SIMPLIFIED_CHINESE,
+            TimestampStyle.COMPACT,
+        )
 
         assertTrue("实际：$text", Regex("""^\d{2}-\d{2} \d{2}:\d{2}$""").matches(text))
+    }
+
+    /** 英文界面要用月名在前、12 小时制的写法；跟着设备 Locale 走会让中英混排（R-I18N-12）。 */
+    @Test
+    fun CompactTimestamp_englishUsesMonthNameAndAmPm() {
+        val text = formatTimestamp(1_700_000_000_000L, Locale.ENGLISH, TimestampStyle.COMPACT)
+
+        assertTrue("实际：$text", Regex("""^[A-Z][a-z]{2} \d{1,2}, \d{1,2}:\d{2} [AP]M$""").matches(text))
+    }
+
+    @Test
+    fun FullTimestamp_chineseKeepsYearAnd24HourClock() {
+        val text = formatTimestamp(1_700_000_000_000L, Locale.SIMPLIFIED_CHINESE)
+
+        assertTrue("实际：$text", Regex("""^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$""").matches(text))
     }
 }

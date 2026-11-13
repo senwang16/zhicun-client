@@ -9,6 +9,8 @@ import com.zhicun.app.domain.repository.ProcessingJobRepository
 import com.zhicun.app.domain.repository.RecordRepository
 import com.zhicun.app.domain.settings.AiSettings
 import com.zhicun.app.domain.settings.CloudUploadGate
+import com.zhicun.app.domain.settings.DefaultLanguagePreference
+import com.zhicun.app.domain.settings.LanguagePreference
 import com.zhicun.app.domain.worker.ProcessingJobTargets
 import com.zhicun.app.domain.worker.ProcessingScheduler
 import java.util.UUID
@@ -36,6 +38,7 @@ class RetryProcessingUseCase @Inject constructor(
     private val scheduler: ProcessingScheduler,
     private val aiSettings: AiSettings,
     private val gatewaySettings: AiGatewaySettings,
+    private val languagePreference: LanguagePreference = DefaultLanguagePreference,
 ) {
 
     /**
@@ -64,10 +67,13 @@ class RetryProcessingUseCase @Inject constructor(
             .filter { only == null || it in only }
         if (jobTypes.isEmpty()) return false
 
+        // 手动重试 = 用户此刻要的语言（P11-07 / R-I18N-06）：不沿用旧快照。
+        val language = languagePreference.uiLanguage().code
+
         jobTypes.forEach { jobType ->
             val existing = jobRepository.getByRecordAndType(recordId, jobType)
             if (existing == null) {
-                jobRepository.insert(newJob(recordId, jobType))
+                jobRepository.insert(newJob(recordId, jobType, language))
             } else {
                 jobRepository.updateStatus(
                     existing.copy(
@@ -81,6 +87,7 @@ class RetryProcessingUseCase @Inject constructor(
                         errorCategory = null,
                         startedAt = null,
                         finishedAt = null,
+                        outputLanguage = language,
                     ),
                 )
             }
@@ -104,12 +111,13 @@ class RetryProcessingUseCase @Inject constructor(
         return true
     }
 
-    private fun newJob(recordId: String, jobType: JobType) = ProcessingJob(
+    private fun newJob(recordId: String, jobType: JobType, language: String) = ProcessingJob(
         id = UUID.randomUUID().toString(),
         recordId = recordId,
         jobType = jobType,
         status = JobStatus.QUEUED,
         attempts = 0,
         maxAttempts = ProcessingJob.DEFAULT_MAX_ATTEMPTS,
+        outputLanguage = language,
     )
 }

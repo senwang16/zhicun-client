@@ -18,6 +18,7 @@ import com.zhicun.app.domain.model.Record
 import com.zhicun.app.domain.model.RecordType
 import com.zhicun.app.domain.model.SensitivityStatus
 import com.zhicun.app.domain.model.TagSource
+import com.zhicun.app.domain.settings.AppLanguage
 import com.zhicun.app.fake.FakeCollectionRepository
 import com.zhicun.app.fake.FakeAiGatewaySettings
 import com.zhicun.app.fake.FakeAiSettings
@@ -92,6 +93,7 @@ class SummarizeWorkerTest {
     private suspend fun seedJob(
         status: JobStatus = JobStatus.QUEUED,
         jobType: JobType = JobType.SUMMARIZE,
+        outputLanguage: String? = null,
     ) {
         jobRepository.insert(
             ProcessingJob(
@@ -100,6 +102,7 @@ class SummarizeWorkerTest {
                 jobType = jobType,
                 status = status,
                 attempts = 0,
+                outputLanguage = outputLanguage,
             ),
         )
     }
@@ -566,6 +569,63 @@ class SummarizeWorkerTest {
 
         assertTrue(result is ListenableWorker.Result.Success)
         assertTrue(enricher.calls.isEmpty())
+    }
+
+    // ------------------------------------------------------------- 输出语言（P11-07）
+
+    /**
+     * 任务行快照是输出语言的**唯一**依据：Worker 不读偏好。
+     *
+     * 这样"排完队之后用户切了语言"不会让自动重试换成另一种语言 ——
+     * 同一次逻辑处理在任何一次重试里都必须产出同一种语言（R-I18N-04/05）。
+     */
+    @Test
+    fun DoWork_englishJobSnapshot_callsEnricherWithEnglishAndRecordsIt() = runTest {
+        seedJob(outputLanguage = AppLanguage.EN.code)
+
+        val result = startWorker()
+
+        assertTrue("应成功，实际 $result", result is ListenableWorker.Result.Success)
+        assertEquals(listOf(AppLanguage.EN), enricher.languages)
+        assertEquals("en", derived(DerivedType.TITLE)?.outputLanguage)
+        assertEquals("en", derived(DerivedType.SUMMARY)?.outputLanguage)
+        assertEquals("en", derived(DerivedType.TAGS)?.outputLanguage)
+    }
+
+    @Test
+    fun DoWork_chineseJobSnapshot_recordsChinese() = runTest {
+        seedJob(outputLanguage = AppLanguage.ZH.code)
+
+        startWorker()
+
+        assertEquals(listOf(AppLanguage.ZH), enricher.languages)
+        assertEquals("zh", derived(DerivedType.SUMMARY)?.outputLanguage)
+    }
+
+    /** 升级前的历史任务行没有语言快照：按中文处理，与服务端缺省 `zh` 同口径。 */
+    @Test
+    fun DoWork_missingSnapshot_defaultsToChinese() = runTest {
+        seedJob()
+
+        startWorker()
+
+        assertEquals(listOf(AppLanguage.ZH), enricher.languages)
+        assertEquals("zh", derived(DerivedType.SUMMARY)?.outputLanguage)
+    }
+
+    /** 模板（图片无字 / 静音录音）落空摘要时同样要记语言，否则历史结果无法区分。 */
+    @Test
+    fun DoWork_emptySummaryStillRecordsLanguage() = runTest {
+        recordRepository.byId[recordId] = recordRepository.byId[recordId]!!.copy(
+            type = RecordType.FILE,
+            rawText = null,
+        )
+        recordRepository.stored.value = listOf(recordRepository.byId[recordId]!!)
+        seedJob(outputLanguage = AppLanguage.EN.code)
+
+        startWorker()
+
+        assertEquals("空摘要也属于生成类结果", "en", derived(DerivedType.SUMMARY)?.outputLanguage)
     }
 
     // ------------------------------------------------------------- 合集（M20）

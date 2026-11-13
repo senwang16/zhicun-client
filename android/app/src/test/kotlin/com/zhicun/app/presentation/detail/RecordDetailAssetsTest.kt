@@ -27,7 +27,7 @@ import org.robolectric.annotation.Config
  * 3. 点击只回调，打开动作在 Screen 层（FileProvider 在 Robolectric 下恒失败，见 M15 教训）。
  */
 @RunWith(RobolectricTestRunner::class)
-@Config(qualifiers = "w411dp-h891dp")
+@Config(qualifiers = "zh-rCN-w411dp-h891dp")
 class RecordDetailAssetsTest {
 
     @get:Rule

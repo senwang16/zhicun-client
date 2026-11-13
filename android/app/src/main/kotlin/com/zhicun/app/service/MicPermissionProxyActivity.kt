@@ -1,6 +1,7 @@
 package com.zhicun.app.service
 
 import android.Manifest
+import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
@@ -10,6 +11,7 @@ import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.result.contract.ActivityResultContracts
 import com.zhicun.app.R
+import com.zhicun.app.localizedContext
 
 /**
  * 麦克风权限的透明中转页（2026-10-26）。
@@ -30,6 +32,11 @@ import com.zhicun.app.R
  * 详情页；首次拒绝（仍可再次申请）只提示，不打断用户。
  */
 class MicPermissionProxyActivity : ComponentActivity() {
+
+    /** 权限被拒的提示文字必须跟随应用内语言（P11-05）。 */
+    override fun attachBaseContext(newBase: Context) {
+        super.attachBaseContext(localizedContext(newBase))
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)

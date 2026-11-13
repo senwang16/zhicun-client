@@ -21,6 +21,7 @@ import com.zhicun.app.domain.repository.DerivedContentRepository
 import com.zhicun.app.domain.repository.ProcessingJobRepository
 import com.zhicun.app.domain.repository.TagRepository
 import com.zhicun.app.domain.settings.AiSettings
+import com.zhicun.app.domain.settings.AppLanguage
 import com.zhicun.app.domain.settings.CloudUploadGate
 import com.zhicun.app.domain.worker.ProcessorResult
 import dagger.assisted.Assisted
@@ -86,6 +87,9 @@ class SummarizeWorker @AssistedInject constructor(
         }
 
         val isCollection = record.type == RecordType.COLLECTION
+        // 输出语言在派发时已快照到任务行（P11-07）：Worker 不再读偏好 ——
+        // 否则"排完队之后用户切了语言"会让同一次处理在自动重试里换成另一种语言。
+        val language = jobLanguage(record.id)
         // 上游还在产正文就先让出这一轮（2026-11-05 用户实测）：判据是"上游跑没跑完"，
         // 不是"拼出来的正文空不空"。否则"图片 + 一句备注"会立刻拿那句备注去问模型 ——
         // OCR 文字这时还没生成，模型只能如实返回空摘要，界面上就是"有文字却没整理"。
@@ -124,7 +128,7 @@ class SummarizeWorker @AssistedInject constructor(
                 ProcessorResult.Permanent("没有可用于摘要的正文（上游任务 $failedUpstream 失败）")
             } else {
                 // 本来就不会有正文（FILE / 成员全是空内容 / 上游跑完但没字）：落一条空摘要即可
-                persistEmptySummary(record)
+                persistEmptySummary(record, language)
                 markCollectionGenerated(record)
                 ProcessorResult.Success
             }
@@ -134,8 +138,8 @@ class SummarizeWorker @AssistedInject constructor(
         // 或者刚产出了一块用户还没确认过的内容（R-2 / R-6）
         executor.recheckBeforeUpload(record.id, input.parts)?.let { return ProcessorResult.Blocked(it) }
 
-        val enrichment = enricher.enrich(input.text.take(MAX_INPUT_CHARS))
-        persist(record, enrichment)
+        val enrichment = enricher.enrich(input.text.take(MAX_INPUT_CHARS), language)
+        persist(record, enrichment, language)
         markCollectionGenerated(record)
         if (enrichment.summary.isNullOrBlank() && SummaryPolicy.requiresSummary(input.text)) {
             // 有正文、两家上游却都没给出摘要（2026-11-05 线上）——**不能算成功**。
@@ -153,6 +157,17 @@ class SummarizeWorker @AssistedInject constructor(
         }
         return ProcessorResult.Success
     }
+
+    /**
+     * 派发时快照的输出语言（P11-07）。
+     *
+     * 历史行（v11 之前）没有该列值 → 按中文，与服务端"缺省 `zh`"和迁移回填保持一致；
+     * 任务行缺失（理论上不会发生，执行器已先查过）同样回落到中文，不抛异常中断处理。
+     */
+    private suspend fun jobLanguage(recordId: String): AppLanguage =
+        AppLanguage.fromCode(
+            jobRepository.getByRecordAndType(recordId, JobType.SUMMARIZE)?.outputLanguage,
+        )
 
     /** 合集的所有成员（含已删除）——是否参与由 `ProcessingInputText` 统一判断。 */
     private suspend fun collectionMemberInputs(collectionId: String): List<CollectionMemberInput> =
@@ -214,12 +229,12 @@ class SummarizeWorker @AssistedInject constructor(
      * 内容抹掉。空串而不是 null，是因为"有没有这一行"就是界面区分
      * "处理了但没内容" / "还没处理"的唯一判据。
      */
-    private suspend fun persistEmptySummary(record: Record) {
+    private suspend fun persistEmptySummary(record: Record, language: AppLanguage) {
         if (derivedContentRepository.getByRecordAndType(record.id, DerivedType.SUMMARY) != null) return
-        upsert(record.id, DerivedType.SUMMARY, "", System.currentTimeMillis())
+        upsert(record.id, DerivedType.SUMMARY, "", System.currentTimeMillis(), language)
     }
 
-    private suspend fun persist(record: Record, enrichment: Enrichment) {
+    private suspend fun persist(record: Record, enrichment: Enrichment, language: AppLanguage) {
         val now = System.currentTimeMillis()
 
         // 网页提取已经写了页面标题：那是站点自己的标题，比模型生成的短标题更准，
@@ -227,11 +242,11 @@ class SummarizeWorker @AssistedInject constructor(
         if (enrichment.title != null &&
             derivedContentRepository.getByRecordAndType(record.id, DerivedType.TITLE) == null
         ) {
-            upsert(record.id, DerivedType.TITLE, enrichment.title, now)
+            upsert(record.id, DerivedType.TITLE, enrichment.title, now, language)
         }
 
         // 空摘要也写：界面靠"有没有这一行"区分"没处理"和"处理了但没内容"
-        upsert(record.id, DerivedType.SUMMARY, enrichment.summary.orEmpty(), now)
+        upsert(record.id, DerivedType.SUMMARY, enrichment.summary.orEmpty(), now, language)
 
         val tags = enrichment.tags
             .map { it.trim().take(MAX_TAG_LENGTH) }
@@ -241,16 +256,23 @@ class SummarizeWorker @AssistedInject constructor(
 
         // TAGS 派生内容存"模型原始回答"，标签表存"可查询的索引"。
         // 两者都写：前者便于排查"模型当年给了什么"，后者供检索与展示。
-        upsert(record.id, DerivedType.TAGS, tags.joinToString(TAG_SEPARATOR), now)
+        upsert(record.id, DerivedType.TAGS, tags.joinToString(TAG_SEPARATOR), now, language)
         tagRepository.replaceAiTags(record.id, tags, now)
 
         Log.i(
             TAG,
-            "摘要完成 recordId=${record.id} 摘要长度=${enrichment.summary?.length ?: 0} 标签数=${tags.size}",
+            "摘要完成 recordId=${record.id} 语言=${language.code} " +
+                "摘要长度=${enrichment.summary?.length ?: 0} 标签数=${tags.size}",
         )
     }
 
-    private suspend fun upsert(recordId: String, type: DerivedType, content: String, now: Long) {
+    private suspend fun upsert(
+        recordId: String,
+        type: DerivedType,
+        content: String,
+        now: Long,
+        language: AppLanguage,
+    ) {
         derivedContentRepository.upsert(
             DerivedContent(
                 id = DerivedContentKeys.idFor(recordId, type),
@@ -260,6 +282,9 @@ class SummarizeWorker @AssistedInject constructor(
                 processorVersion = PROCESSOR_VERSION,
                 processedAt = now,
                 errorMessage = null,
+                // 标题 / 摘要 / 标签都是生成类结果（R-I18N-08），记下生成时语言；
+                // 原文、OCR、转写不经过这里，因此永远不带语言标记。
+                outputLanguage = language.code,
             ),
         )
     }

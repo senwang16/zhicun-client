@@ -22,6 +22,7 @@ import com.zhicun.app.domain.usecase.RelatedRecords
 import com.zhicun.app.presentation.common.displayTitleOrFallback
 import com.zhicun.app.presentation.common.formatTimestamp
 import com.zhicun.app.presentation.common.recordTypeLabelRes
+import com.zhicun.app.presentation.common.uiLocale
 import kotlin.math.roundToInt
 
 /** 详情页"相关记录"分区的测试 tag。 */
@@ -95,7 +96,7 @@ internal fun RelatedRecordsBlock(
                             text = stringResource(
                                 R.string.detail_related_meta,
                                 stringResource(recordTypeLabelRes(item.record.type)),
-                                formatTimestamp(item.record.createdAt),
+                                formatTimestamp(item.record.createdAt, uiLocale()),
                             ),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,

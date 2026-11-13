@@ -24,7 +24,7 @@ import org.robolectric.annotation.Config
  * 只测无状态块。"空列表时整块不渲染"是调用方（RecordDetailScreen 槽位）的职责，在 VM/壳层测。
  */
 @RunWith(RobolectricTestRunner::class)
-@Config(qualifiers = "w411dp-h891dp")
+@Config(qualifiers = "zh-rCN-w411dp-h891dp")
 class RecordDetailRelatedTest {
 
     @get:Rule

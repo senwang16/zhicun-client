@@ -850,6 +850,85 @@ class MigrationTest {
         }
     }
 
+    /**
+     * 10 → 11：AI 输出语言快照（P11-07 / R-I18N-08）。
+     *
+     * 三条断言对应三个失败后果：
+     * 1. 老 AI 结果回填 `zh`（否则英文界面下历史中文摘要会被当成英文，重生成判断失真）；
+     * 2. 老任务行语言为 NULL（不能用默认值假装知道，自动重试必须回落到中文口径）；
+     * 3. 新结果能写入并读回 `en`（否则本次改造对生成类结果不生效）。
+     */
+    @Test
+    fun Migrate10To11_addsLanguageColumnsAndBackfillsChinese() = runBlocking {
+        createSchemaDatabase(10).use { db ->
+            db.execSQL(
+                """
+                INSERT INTO `records`
+                    (`id`, `type`, `capture_source`, `raw_text`, `created_at`, `updated_at`,
+                     `local_status`, `processing_status`, `sensitivity_status`)
+                VALUES
+                    ('v10-lang', 'TEXT_NOTE', 'MANUAL', 'v10 里的记录', 1000, 2000, 'SAVED', 'DONE', 'CLEAR')
+                """.trimIndent(),
+            )
+            db.execSQL(
+                """
+                INSERT INTO `derived_contents`
+                    (`id`, `record_id`, `content_type`, `content`, `processor_version`,
+                     `processed_at`, `error_message`, `asset_id`)
+                VALUES
+                    ('v10-lang:SUMMARY', 'v10-lang', 'SUMMARY', '升级前生成的中文摘要',
+                     'gateway-enrich/v1', 2000, NULL, '')
+                """.trimIndent(),
+            )
+            db.execSQL(
+                """
+                INSERT INTO `processing_jobs`
+                    (`id`, `record_id`, `job_type`, `status`, `attempts`, `max_attempts`,
+                     `wait_rounds`, `next_retry_at`, `error_category`, `started_at`, `finished_at`)
+                VALUES
+                    ('job-v10', 'v10-lang', 'SUMMARIZE', 'DONE', 1, 3, 0, NULL, NULL, 1000, 2000)
+                """.trimIndent(),
+            )
+        }
+
+        val database = AppDatabaseFactory.create(context, name = dbName)
+        try {
+            database.openHelper.readableDatabase
+                .query("SELECT `output_language` FROM `derived_contents` WHERE `id` = 'v10-lang:SUMMARY'")
+                .use { cursor ->
+                    assertTrue(cursor.moveToFirst())
+                    assertEquals("升级前的 AI 结果按中文如实回填", "zh", cursor.getString(0))
+                }
+            database.openHelper.readableDatabase
+                .query("SELECT `output_language` FROM `processing_jobs` WHERE `id` = 'job-v10'")
+                .use { cursor ->
+                    assertTrue(cursor.moveToFirst())
+                    assertTrue("历史任务没有语言信息，不能用默认值假装知道", cursor.isNull(0))
+                }
+
+            database.derivedContentDao().upsert(
+                DerivedContentEntity(
+                    id = "v10-lang:SUMMARY:new",
+                    recordId = "v10-lang",
+                    contentType = DerivedType.SUMMARY,
+                    content = "English summary",
+                    processorVersion = "gateway-enrich/v1",
+                    processedAt = 3000,
+                    errorMessage = null,
+                    outputLanguage = "en",
+                ),
+            )
+            database.openHelper.readableDatabase
+                .query("SELECT `output_language` FROM `derived_contents` WHERE `id` = 'v10-lang:SUMMARY:new'")
+                .use { cursor ->
+                    assertTrue(cursor.moveToFirst())
+                    assertEquals("新结果必须能记录英文", "en", cursor.getString(0))
+                }
+        } finally {
+            database.close()
+        }
+    }
+
     private fun ocrRow(assetId: String, content: String) = DerivedContentEntity(
         id = "v7-multi:OCR_TEXT:$assetId",
         recordId = "v7-multi",

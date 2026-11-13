@@ -6,7 +6,7 @@
 No. There is no sign-in, no sync service, and no analytics. All records live on the device.
 
 **Is there a cloud backup or multi-device sync?**
-No. Use Settings → 数据 → 导出全部记录 to move data between devices; restoring an export is
+No. Use Settings → Data → Export all records to move data between devices; restoring an export is
 not automated yet.
 
 **Why is the UI Chinese?**
@@ -24,7 +24,7 @@ semantic search need a configured AI provider.
 ## AI configuration
 
 **Where do I paste my API key?**
-Settings → AI 服务配置 → switch off "使用官方服务", then fill the three cards. Each card has
+Settings → AI services → switch off "Use the official service", then fill the three cards. Each card has
 its own Save button. The key is stored encrypted and is never shown again; leave the field
 empty when you only want to change the model name.
 
@@ -39,13 +39,33 @@ empty keeps the stored one.
 
 **I changed the embedding model and semantic search found nothing.**
 Old vectors are excluded because they belong to a different vector space. Open
-Settings → AI 服务配置 → 向量状态, press 重新向量化, and wait for the queued `EMBED` jobs.
+Settings → AI services → Embedding status, press Rebuild embeddings, and wait for the queued `EMBED` jobs.
 Records held back by the cloud switch or by sensitive-content confirmation stay pending.
 
 **Which errors are retried automatically?**
 Network failures and 5xx are retried with backoff; 429 rate limits back off without consuming
 the retry budget; quota exhaustion, auth failures and bad model names are terminal so the app
 does not waste your quota.
+
+## Language
+
+**How do I switch the app to English (or back to Chinese)?**
+Settings → Language, then tap 中文 or English. The switch is immediate and local: nothing is
+uploaded, nothing is re-processed. On first launch the app followed your phone's language;
+after that it keeps whatever you chose (on Android 13+ it also appears under the system
+"App language" settings).
+
+**Will my existing notes or summaries be translated?**
+No. Original text, OCR, transcripts, web snapshots and file names are never translated. AI
+titles/summaries/tags generated **after** the switch use the new language; older results stay
+exactly as they were. To regenerate one in the current language, open the record and press
+regenerate (Settings language applies to the new result).
+
+**Why did the notification channel name not change language?**
+Android stores a channel's name when the channel is first created and does not allow renaming
+it. The app creates the channel on first launch, so if you switch the app language later the
+channel keeps its original name. Everything inside the notification (title, actions) does
+follow the app language.
 
 ## Capture and processing
 

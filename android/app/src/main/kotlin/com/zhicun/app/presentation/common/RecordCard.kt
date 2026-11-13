@@ -187,7 +187,7 @@ fun RecordCard(
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
                 Text(
-                    text = formatTimestamp(record.createdAt, pattern = "MM-dd HH:mm"),
+                    text = formatTimestamp(record.createdAt, uiLocale(), TimestampStyle.COMPACT),
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 1,

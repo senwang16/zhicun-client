@@ -13,6 +13,7 @@ import com.zhicun.app.MainActivity
 import com.zhicun.app.R
 import com.zhicun.app.domain.usecase.ClipboardCaptureResult
 import com.zhicun.app.domain.usecase.CaptureClipboardUseCase
+import com.zhicun.app.localizedContext
 import com.zhicun.app.presentation.navigation.Routes
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
@@ -42,6 +43,11 @@ import kotlinx.coroutines.withTimeoutOrNull
  */
 @AndroidEntryPoint
 class ClipboardCaptureActivity : ComponentActivity() {
+
+    /** 语言偏好早于任何组件生命周期（P11-05）：Toast/RemoteViews 必须用包裹后的资源。 */
+    override fun attachBaseContext(newBase: Context) {
+        super.attachBaseContext(localizedContext(newBase))
+    }
 
     @Inject
     lateinit var captureClipboard: CaptureClipboardUseCase

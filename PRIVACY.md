@@ -33,11 +33,11 @@ stays where it was.
 
 | Data | Destination | Trigger | Where it is documented in the app |
 |---|---|---|---|
-| Record text (up to 4000 chars) | The AI provider you configured, for summary/tags or embeddings | Cloud AI switch on + provider configured + record not awaiting sensitive-content confirmation | Settings → 云端 AI 处理, and the per-record AI section |
+| Record text (up to 4000 chars) | The AI provider you configured, for summary/tags or embeddings | Cloud AI switch on + provider configured + record not awaiting sensitive-content confirmation | Settings → Cloud AI, and the per-record AI section |
 | Search query text | Same provider, for the query embedding | Same conditions, when you search | Search screen notice when semantic ranking is unavailable |
-| Audio file (up to 20 MB, max 5 minutes) | Same provider, for transcription | Cloud AI on + provider configured + not awaiting confirmation | Settings → 语音转写 |
-| A web page URL (and nothing else) | The website itself | You add a link (or press re-extract) | Detail page "允许抓取此网页" for suspected-sensitive records |
-| Random install identifier, hashed | Official gateway only, as `X-Client-Id` | Any request to the official gateway | Settings → 隐私说明 item 6 |
+| Audio file (up to 20 MB, max 5 minutes) | Same provider, for transcription | Cloud AI on + provider configured + not awaiting confirmation | Settings → Voice transcription |
+| A web page URL (and nothing else) | The website itself | You add a link (or press re-extract) | Detail page "Allow fetching this page" for suspected-sensitive records |
+| Random install identifier, hashed | Official gateway only, as `X-Client-Id` | Any request to the official gateway | Settings → Privacy item 6 |
 
 If you use a third-party vendor, that vendor's own retention and training policies apply to
 the text or audio it receives. Check them before enabling cloud AI. This repository cannot
@@ -80,7 +80,7 @@ the system picker) or "all files access".
 ## Clipboard
 
 Clipboard capture reads text only when you tap the bubble with clipboard capture enabled (or
-use the explicit "存剪贴板" action). On Android 12+ the system shows its own confirmation. The
+use the explicit "Save clipboard" action). On Android 12+ the system shows its own confirmation. The
 app never reads the clipboard in the background.
 
 ## Your controls
@@ -89,9 +89,9 @@ app never reads the clipboard in the background.
   results are unaffected.
 - **Per-record confirmation**: for suspected-sensitive records, upload happens only after an
   explicit confirmation for the current content.
-- **Export**: Settings → 数据 → 导出全部记录 creates a ZIP you can move anywhere.
+- **Export**: Settings → Data → Export all records creates a ZIP you can move anywhere.
 - **Delete**: records can be soft-deleted (archived/hidden) and then permanently removed with
-  "清理已删除的记录", which also deletes attachment files.
+  "Clean up deleted records", which also deletes attachment files.
 - **Uninstall**: removes the app's private directory, including all records and attachments.
   Export first if you want to keep them.
 

@@ -24,5 +24,5 @@ import com.zhicun.app.domain.model.Record
 fun Record.displayTitleOrFallback(): String =
     displayTitle() ?: stringResource(
         recordFallbackTitleRes(type),
-        formatTimestamp(createdAt, FALLBACK_TITLE_TIME_PATTERN),
+        formatTimestamp(createdAt, uiLocale(), TimestampStyle.COMPACT),
     )

@@ -20,6 +20,7 @@ import com.zhicun.app.domain.audio.VoiceRecorder
 import com.zhicun.app.domain.floating.BubbleEdge
 import com.zhicun.app.domain.floating.FloatingBubbleSettings
 import com.zhicun.app.domain.usecase.SaveVoiceNoteUseCase
+import com.zhicun.app.localizedContext
 import com.zhicun.app.presentation.floating.BUBBLE_TAB_HEIGHT
 import com.zhicun.app.presentation.floating.BUBBLE_TAB_WIDTH
 import com.zhicun.app.presentation.floating.QuickCaptureAction
@@ -73,6 +74,14 @@ import javax.inject.Inject
  */
 @AndroidEntryPoint
 class FloatingBubbleService : Service() {
+
+    /**
+     * 常驻通知、气泡面板与 Toast 都从本服务的 context 取资源（P11-05）。
+     * 不包裹就会跟着系统语言 —— 应用内选了 English 仍弹中文通知。
+     */
+    override fun attachBaseContext(newBase: Context) {
+        super.attachBaseContext(localizedContext(newBase))
+    }
 
     @Inject
     lateinit var settings: FloatingBubbleSettings

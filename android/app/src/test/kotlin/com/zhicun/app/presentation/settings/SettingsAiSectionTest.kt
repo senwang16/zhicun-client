@@ -34,7 +34,7 @@ import org.robolectric.annotation.Config
  * 4. 向量待重建数 > 0 时给出重建入口，为 0 时不出现（避免一个永远无意义的按钮）。
  */
 @RunWith(RobolectricTestRunner::class)
-@Config(qualifiers = "w411dp-h891dp")
+@Config(qualifiers = "zh-rCN-w411dp-h891dp")
 class SettingsAiSectionTest {
 
     @get:Rule

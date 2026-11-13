@@ -29,7 +29,7 @@ import org.robolectric.annotation.Config
  * 无结果要有明确提示（不能是空白页）、结果页要显示"关键词搜索"降级说明。
  */
 @RunWith(RobolectricTestRunner::class)
-@Config(qualifiers = "w411dp-h891dp")
+@Config(qualifiers = "zh-rCN-w411dp-h891dp")
 class SearchScreenTest {
 
     @get:Rule

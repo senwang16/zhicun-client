@@ -23,7 +23,7 @@ import org.robolectric.annotation.Config
  * 剪贴板、录音、收件箱仍是通知栏与桌面小组件的动作，不在面板里出现。
  */
 @RunWith(RobolectricTestRunner::class)
-@Config(qualifiers = "w411dp-h891dp")
+@Config(qualifiers = "zh-rCN-w411dp-h891dp")
 class QuickCapturePanelTest {
 
     @get:Rule

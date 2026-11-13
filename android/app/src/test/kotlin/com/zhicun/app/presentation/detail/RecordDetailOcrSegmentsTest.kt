@@ -31,7 +31,7 @@ import org.robolectric.annotation.Config
  * 3. 复制一次带走全部识别结果，用户不必逐张复制再自己拼。
  */
 @RunWith(RobolectricTestRunner::class)
-@Config(qualifiers = "w411dp-h891dp")
+@Config(qualifiers = "zh-rCN-w411dp-h891dp")
 class RecordDetailOcrSegmentsTest {
 
     @get:Rule

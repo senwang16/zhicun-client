@@ -66,4 +66,11 @@ data class ProcessingJobEntity(
 
     @ColumnInfo(name = "finished_at")
     val finishedAt: Long?,
+
+    /**
+     * 派发时快照的输出语言（P11-07）；可空是为了兼容升级前的历史行。
+     * 读侧按 `AppLanguage.fromCode` 兜底为中文，不抛异常。
+     */
+    @ColumnInfo(name = "output_language")
+    val outputLanguage: String? = null,
 )

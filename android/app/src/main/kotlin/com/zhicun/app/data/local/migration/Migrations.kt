@@ -276,6 +276,32 @@ val MIGRATION_9_10 = object : Migration(9, 10) {
     }
 }
 
+/**
+ * v10 → v11：AI 输出语言快照（P11-07 / R-I18N-08）。
+ *
+ * 两列一起升版，因为它们回答的是同一个问题："这条结果是用哪种语言生成的"。
+ * 拆成两次迁移只会多一次真机上的风险窗口。
+ *
+ * ## `processing_jobs.output_language` 可空
+ * 历史任务没有语言信息，**不能**用默认值猜成某种语言：自动重试若沿用错误快照，
+ * 会让同一次逻辑处理在中英之间跳。可空 + 读侧兜底 `zh`，与服务端"缺省 `zh`"同口径；
+ * 历史任务完成后也不会因此被重跑（R-I18N-05：历史结果不重新生成）。
+ *
+ * ## `derived_contents.output_language` 非空、默认 `zh`
+ * 升级前所有 AI 结果都由中文提示词生成，回填 `zh` 是如实记录而不是猜测。
+ * 默认值必须与实体上的 `defaultValue = "zh"` 一致，否则 Room 结构校验会失败。
+ * OCR / 转写 / 网页正文等原始内容也会带上 `zh`（列非空），但映射层只对
+ * TITLE / SUMMARY / TAGS 暴露该字段 —— 原始内容在语义上仍"没有输出语言"。
+ */
+val MIGRATION_10_11 = object : Migration(10, 11) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL("ALTER TABLE `processing_jobs` ADD COLUMN `output_language` TEXT")
+        db.execSQL(
+            "ALTER TABLE `derived_contents` ADD COLUMN `output_language` TEXT NOT NULL DEFAULT 'zh'",
+        )
+    }
+}
+
 /** 全部迁移，按起始版本升序；[com.zhicun.app.data.local.AppDatabaseFactory] 统一注册。 */
 val ALL_MIGRATIONS = arrayOf(
     MIGRATION_1_2,
@@ -287,4 +313,5 @@ val ALL_MIGRATIONS = arrayOf(
     MIGRATION_7_8,
     MIGRATION_8_9,
     MIGRATION_9_10,
+    MIGRATION_10_11,
 )

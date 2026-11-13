@@ -22,6 +22,15 @@ data class DerivedContent(
      * 库里用空串存记录级，因为 SQLite 的唯一索引不去重 NULL（见 v8 迁移注释）。
      */
     val assetId: String? = null,
+
+    /**
+     * 生成这条结果时使用的输出语言（`zh` / `en`，R-I18N-08）。
+     *
+     * **只对生成类结果有意义**（TITLE / SUMMARY / TAGS）：它们的内容跟随界面语言设置，
+     * 换语言后历史结果保持原样、不重新生成（R-I18N-05）。OCR / 转写 / 网页正文等原始内容
+     * 恒为 null —— 它们忠实于来源，不因语言设置而改变。
+     */
+    val outputLanguage: String? = null,
 )
 
 /** 派生内容类型。EMBEDDING 的 content 存放序列化后的向量（方案待 T-003 决策）。 */

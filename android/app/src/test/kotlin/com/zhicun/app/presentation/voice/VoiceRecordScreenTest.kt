@@ -22,7 +22,7 @@ import org.robolectric.annotation.Config
  * 打断对话框两个分支、太短提示、权限说明。
  */
 @RunWith(RobolectricTestRunner::class)
-@Config(qualifiers = "w411dp-h891dp")
+@Config(qualifiers = "zh-rCN-w411dp-h891dp")
 class VoiceRecordScreenTest {
 
     @get:Rule

@@ -9,9 +9,10 @@ files and voice notes from any app, and get AI summaries, tags, OCR, transcripts
 semantic search on top of them. Everything is stored locally; AI processing is opt-in and
 can use the official service or your own OpenAI-compatible providers.
 
-> **Status: pre-1.0 (v0.1.0).** The app works and is used daily by the maintainer, but APIs,
-> database schema and configuration formats may still change. **The app UI is currently
-> Chinese-only**; an English UI is not available yet.
+> **Status: pre-1.0 (v0.1.1).** The app works and is used daily by the maintainer, but APIs,
+> database schema and configuration formats may still change. The UI is available in
+> **Chinese and English**: first launch follows your phone's language, and you can switch at
+> any time in **Settings → Language**.
 
 ---
 
@@ -37,6 +38,7 @@ opposite: capture first, organize later, and let retrieval do the work.
 | On-device | ML Kit Chinese/English OCR, HTML main-content extraction with saved snapshot, SQLite FTS4 keyword search |
 | AI (opt-in) | Summary, short title, tags, speech transcription, embeddings for semantic search and related records |
 | Organization | Inbox grouped by date, favorites, pin, archive, user + AI tags, collections (merge records into one summarized unit) |
+| Language | Chinese / English UI with a one-tap switch in Settings; first launch follows the phone language; AI titles, summaries and tags follow the same choice, while original text, OCR and transcripts are never translated |
 | Search | Hybrid keyword + semantic ranking, search history, tag filtering, archived search |
 | Privacy controls | Global cloud switch, on-device sensitive-content detection (API keys, phone/ID/bank card numbers), per-record confirmation before upload, independent confirmation before fetching a web page |
 | Data ownership | ZIP export of records + attachments (+ optional AI derivatives), hard-delete and storage cleanup |
@@ -74,6 +76,17 @@ cannot silently mix incompatible vector spaces.
 Cloud processing is off until you turn it on. Without cloud AI the app still captures,
 OCRs, extracts web pages, searches by keyword and exports. The client is fully usable with
 your own providers; no server component is required.
+
+## Install (prebuilt)
+
+A signed release APK is attached to the latest GitHub Release:
+<https://github.com/senwang16/zhicun-client/releases/latest>
+
+- Package: `com.zhicun.app`, version 0.1.1 (versionCode 2)
+- Certificate SHA-256: `1b5a61a420b994925a4db79cab5d9f31a1f608fe9eda3ca6027cf12adc9e48c9`
+- The APK contains **no official-service token**. Configure your own OpenAI-compatible or
+  Anthropic provider in Settings, or request official-service access separately.
+- Updates must be signed with the same key; the project keeps its release key private.
 
 ## Build the Android app
 

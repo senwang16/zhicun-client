@@ -25,6 +25,7 @@ import com.zhicun.app.domain.model.CaptureSource
 import com.zhicun.app.domain.model.InputUri
 import com.zhicun.app.domain.model.RecordInput
 import com.zhicun.app.domain.usecase.SaveRecordUseCase
+import com.zhicun.app.localizedContext
 import dagger.hilt.android.AndroidEntryPoint
 import java.io.File
 import java.io.FileOutputStream
@@ -54,6 +55,11 @@ import kotlinx.coroutines.withContext
  */
 @AndroidEntryPoint
 class ScreenCaptureActivity : ComponentActivity() {
+
+    /** 截图的 Toast 与失败原因都取本页资源，必须跟随应用内语言（P11-05）。 */
+    override fun attachBaseContext(newBase: Context) {
+        super.attachBaseContext(localizedContext(newBase))
+    }
 
     @Inject
     lateinit var saveRecord: SaveRecordUseCase

@@ -61,4 +61,14 @@ data class DerivedContentEntity(
      */
     @ColumnInfo(name = "asset_id", defaultValue = "''")
     val assetId: String = "",
+
+    /**
+     * 生成这条结果时的输出语言（P11 / R-I18N-08）；`zh` 是历史行回填值与缺省值。
+     *
+     * 非空 + 默认 `zh`：老结果都是中文模型生成的，升级后按中文如实展示、**不重新生成**。
+     * 原始内容（OCR / 转写 / 网页正文）不写这一列，读出来按中文兜底，但语义上不参与判断
+     * （见 `DerivedContentMapper`）。
+     */
+    @ColumnInfo(name = "output_language", defaultValue = "zh")
+    val outputLanguage: String = "zh",
 )

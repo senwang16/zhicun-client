@@ -4,9 +4,10 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow SemVer once the
 project reaches 1.0.
 
-## [Unreleased]
+## [0.1.1] - 2026-11-13
 
-Open-source readiness work. No release artifacts yet.
+Bilingual interface, language-aware AI output, and the open-source provider configuration
+baseline.
 
 ### Added
 
@@ -33,6 +34,27 @@ Open-source readiness work. No release artifacts yet.
   provider instead of retrying.
 - **Optional release signing**: `android/keystore.properties` (gitignored) enables a signed
   `assembleRelease`; without it the build stays unsigned for contributors and CI.
+- **Bilingual UI (Chinese / English).** One-tap switch in Settings → Language. On first
+  launch the app follows the device language (`zh*` → Chinese, everything else → English) and
+  persists the choice; afterwards it never follows the system again. Android 13+ stays in
+  sync with the system "App language" page. Switching is local-only: no request, no job, no
+  database migration.
+- **AI output language follows the UI setting.** Processing jobs snapshot `language` when
+  they are dispatched, so queued work and automatic retries keep one language even if the user
+  switches afterwards. The official `/api/v1/enrich` request carries `language`; direct
+  providers append a fixed instruction to their client-side prompt. Generated titles,
+  summaries and tags record `output_language` (database v11), while original text, OCR,
+  transcripts, web snapshots and filenames are never translated.
+- **Language-aware dates and widget/notification text**: timestamp patterns, month names,
+  notification actions and home-screen widget labels follow the selected language, not the
+  system locale.
+- **`language` contract for the gateway**: `POST /api/v1/enrich` accepts optional
+  `language` (`zh` default, `en` supported; anything else is `400 INVALID_REQUEST` and never
+  reaches the upstream). The fixed language instruction is appended to the upstream system
+  prompt; the user text is still sent byte-for-byte in the `user` message.
+- **Resource parity gate**: `scripts/release/check-i18n-res.py` verifies key parity,
+  placeholders, empty values, Chinese leftovers in the English default, and the absence of a
+  duplicate `values-en/`.
 - **Open-source documentation**: English and Chinese README, architecture, development guide,
   AI provider guide, FAQ, privacy notice, contributing guide, code of conduct, security policy.
 - **License**: Apache License 2.0 (`LICENSE`) with a `NOTICE` covering third-party attributions
@@ -40,6 +62,12 @@ Open-source readiness work. No release artifacts yet.
 
 ### Changed
 
+- **Resource layout**: `values/strings.xml` is now English (the default/fallback) and
+  `values-zh/strings.xml` holds Chinese. All date/number formatting takes the app locale from
+  the Activity configuration (`uiLocale()`), never `Locale.getDefault()`.
+- **Database v11**: `processing_jobs.output_language` (nullable) and
+  `derived_contents.output_language` (`NOT NULL DEFAULT 'zh'`). Old AI results are backfilled
+  as Chinese and are **not** regenerated on upgrade.
 - `AiGatewaySettings.isConfigured` now means "at least one cloud capability is usable", not
   "the official gateway is configured". Without this a fully configured custom setup would be
   blocked by the cloud upload gate.

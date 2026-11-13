@@ -26,7 +26,7 @@ import org.robolectric.annotation.Config
  * 与收件箱测试同一套路：只测无状态的 [ArchiveContent]，直接喂 UiState。
  */
 @RunWith(RobolectricTestRunner::class)
-@Config(qualifiers = "w411dp-h891dp")
+@Config(qualifiers = "zh-rCN-w411dp-h891dp")
 class ArchiveScreenTest {
 
     @get:Rule

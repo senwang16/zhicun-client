@@ -28,7 +28,7 @@ import org.robolectric.annotation.Config
  * `RecordDetailScreenTest` 已经很长，再塞进来只会让失败信息更难定位。
  */
 @RunWith(RobolectricTestRunner::class)
-@Config(qualifiers = "w411dp-h891dp")
+@Config(qualifiers = "zh-rCN-w411dp-h891dp")
 class DetailOrganizeBlockTest {
 
     @get:Rule

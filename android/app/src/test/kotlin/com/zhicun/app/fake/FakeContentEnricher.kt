@@ -2,6 +2,7 @@ package com.zhicun.app.fake
 
 import com.zhicun.app.domain.ai.ContentEnricher
 import com.zhicun.app.domain.ai.Enrichment
+import com.zhicun.app.domain.settings.AppLanguage
 
 /**
  * 内容增强器假实现（M11）。
@@ -23,8 +24,12 @@ class FakeContentEnricher : ContentEnricher {
     /** 每次调用的输入文本，按调用顺序记录。 */
     val calls: MutableList<String> = mutableListOf()
 
-    override suspend fun enrich(text: String): Enrichment {
+    /** 每次调用携带的输出语言（P11-07），用于断言任务快照真的传到了 Provider。 */
+    val languages: MutableList<AppLanguage> = mutableListOf()
+
+    override suspend fun enrich(text: String, language: AppLanguage): Enrichment {
         calls += text
+        languages += language
         failure?.let { throw it }
         return result
     }

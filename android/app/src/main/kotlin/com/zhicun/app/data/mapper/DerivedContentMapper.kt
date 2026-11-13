@@ -4,6 +4,18 @@ import com.zhicun.app.data.local.entity.DerivedContentEntity
 import com.zhicun.app.domain.model.DerivedContent
 import com.zhicun.app.domain.model.DerivedType
 
+/**
+ * 只有生成类结果才记录输出语言（P11 / R-I18N-08）。
+ *
+ * OCR 文本、语音转写、网页正文都是**原始内容**：它们忠实于来源，不会因为用户切换界面语言
+ * 而变成另一门语言。把它们也标上语言，会让"这条转写是英文"被误读成"模型翻译成了英文"。
+ */
+private val LANGUAGE_BEARING_TYPES = setOf(
+    DerivedType.TITLE,
+    DerivedType.SUMMARY,
+    DerivedType.TAGS,
+)
+
 /** [DerivedContentEntity] ↔ [DerivedContent] 映射。失败结果的 `content` 为 null、`errorMessage` 有值。 */
 fun DerivedContentEntity.toDomain(): DerivedContent = DerivedContent(
     id = id,
@@ -15,6 +27,7 @@ fun DerivedContentEntity.toDomain(): DerivedContent = DerivedContent(
     errorMessage = errorMessage,
     // 空串是库里的"记录级"表示，domain 用 null 表达同一个意思
     assetId = assetId.takeIf { it.isNotEmpty() },
+    outputLanguage = outputLanguage.takeIf { contentType in LANGUAGE_BEARING_TYPES },
 )
 
 /**
@@ -39,4 +52,7 @@ fun DerivedContent.toEntity(): DerivedContentEntity = DerivedContentEntity(
     processedAt = processedAt,
     errorMessage = errorMessage,
     assetId = assetId ?: "",
+    // 原始内容不标记语言：即便 domain 层被误塞了值，落库也回到中文缺省，
+    // 避免"转写结果被标成生成语言"这种不可逆的脏数据。
+    outputLanguage = outputLanguage.takeIf { contentType in LANGUAGE_BEARING_TYPES } ?: "zh",
 )

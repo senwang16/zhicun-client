@@ -16,6 +16,7 @@ fun ProcessingJobEntity.toDomain(): ProcessingJob = ProcessingJob(
     errorCategory = errorCategory,
     startedAt = startedAt,
     finishedAt = finishedAt,
+    outputLanguage = outputLanguage,
 )
 
 fun ProcessingJob.toEntity(): ProcessingJobEntity = ProcessingJobEntity(
@@ -30,4 +31,5 @@ fun ProcessingJob.toEntity(): ProcessingJobEntity = ProcessingJobEntity(
     errorCategory = errorCategory,
     startedAt = startedAt,
     finishedAt = finishedAt,
+    outputLanguage = outputLanguage,
 )

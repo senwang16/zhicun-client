@@ -29,7 +29,7 @@ import org.robolectric.annotation.Config
  * 用户看不出为什么没反应，所以界面必须同时给出**原因**和**下一步**。
  */
 @RunWith(RobolectricTestRunner::class)
-@Config(qualifiers = "w411dp-h891dp")
+@Config(qualifiers = "zh-rCN-w411dp-h891dp")
 class SettingsScreenTest {
 
     @get:Rule

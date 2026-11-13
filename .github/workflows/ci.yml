@@ -46,6 +46,9 @@ jobs:
           key: gradle-${{ hashFiles('android/gradle/wrapper/gradle-wrapper.properties', 'android/gradle/libs.versions.toml') }}
           restore-keys: gradle-
 
+      - name: Check bilingual resources
+        run: python3 scripts/release/check-i18n-res.py android
+
       - name: Compile and test
         working-directory: android
         run: |

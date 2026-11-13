@@ -3,11 +3,13 @@ package com.zhicun.app.widget
 import android.app.PendingIntent
 import android.appwidget.AppWidgetManager
 import android.appwidget.AppWidgetProvider
+import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.widget.RemoteViews
 import com.zhicun.app.MainActivity
 import com.zhicun.app.R
+import com.zhicun.app.localizedContext
 import com.zhicun.app.presentation.floating.QuickCaptureAction
 import com.zhicun.app.presentation.floating.routeFor
 
@@ -66,8 +68,11 @@ class QuickCaptureWidgetProvider : AppWidgetProvider() {
             appWidgetId: Int,
         ) {
             val views = RemoteViews(context.packageName, R.layout.widget_quick_capture)
+            // 按钮文案跟随应用内语言（P11-05）：Provider 的 context 也可能来自系统刷新，
+            // 不包裹就会退回系统语言
+            val labels = localizedContext(context)
             widgetActions.forEachIndexed { index, action ->
-                views.setTextViewText(BUTTON_IDS[index], context.getString(action.labelRes))
+                views.setTextViewText(BUTTON_IDS[index], labels.getString(action.labelRes))
                 // routeFor 对这三个动作恒非空；contract 由 QuickCaptureWidgetProviderTest 钉死
                 views.setOnClickPendingIntent(
                     BUTTON_IDS[index],
@@ -84,6 +89,20 @@ class QuickCaptureWidgetProvider : AppWidgetProvider() {
                 )
             }
             appWidgetManager.updateAppWidget(appWidgetId, views)
+        }
+
+        /**
+         * 重绘桌面上所有小组件（P11-05）。
+         *
+         * 文案在 [updateWidget] 里解析，系统不会因为应用内换语言而自动刷新 ——
+         * 不主动重绘，桌面会一直显示旧语言，直到下一次 widget 更新。
+         */
+        internal fun refreshAll(context: Context) {
+            val manager = AppWidgetManager.getInstance(context) ?: return
+            val ids = manager.getAppWidgetIds(
+                ComponentName(context, QuickCaptureWidgetProvider::class.java),
+            )
+            ids.forEach { updateWidget(context, manager, it) }
         }
 
         private fun launchIntent(context: Context, requestCode: Int, route: String): PendingIntent =

@@ -27,7 +27,7 @@ import org.robolectric.annotation.Config
  * 不涉及系统选择器（Photo Picker / 文件选择器需要真实系统 UI，属真机验证项）。
  */
 @RunWith(RobolectricTestRunner::class)
-@Config(qualifiers = "w411dp-h891dp")
+@Config(qualifiers = "zh-rCN-w411dp-h891dp")
 class CreateRecordScreenTest {
 
     @get:Rule

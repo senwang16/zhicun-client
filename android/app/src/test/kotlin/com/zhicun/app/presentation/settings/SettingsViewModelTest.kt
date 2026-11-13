@@ -11,6 +11,7 @@ import com.zhicun.app.fake.FakeProcessingJobRepository
 import com.zhicun.app.fake.FakeEmbeddingRepository
 import com.zhicun.app.domain.ai.ProviderMode
 import com.zhicun.app.domain.ai.ProviderProtocol
+import com.zhicun.app.domain.settings.AppLanguage
 import com.zhicun.app.domain.model.JobType
 import com.zhicun.app.domain.usecase.ReEmbedAllUseCase
 import com.zhicun.app.domain.usecase.RetryProcessingUseCase
@@ -30,6 +31,7 @@ import com.zhicun.app.fake.FakeLocalFileStore
 import com.zhicun.app.fake.FakeMaintenanceRepository
 import com.zhicun.app.fake.FakeRecordRepository
 import com.zhicun.app.fake.FakeTagRepository
+import com.zhicun.app.fake.FakeUiLanguageSettings
 import com.zhicun.app.fake.testAsset
 import com.zhicun.app.fake.testRecord
 import com.zhicun.app.util.MainDispatcherRule
@@ -73,6 +75,7 @@ class SettingsViewModelTest {
     private lateinit var aiProviders: FakeAiProviderSettings
     private lateinit var embeddings: FakeEmbeddingRepository
     private lateinit var feedback: FakeFeedbackLauncher
+    private lateinit var language: FakeUiLanguageSettings
 
     // M15：导出与清理
     private lateinit var records: FakeRecordRepository
@@ -105,6 +108,7 @@ class SettingsViewModelTest {
         aiProviders = FakeAiProviderSettings()
         embeddings = FakeEmbeddingRepository()
         feedback = FakeFeedbackLauncher()
+        language = FakeUiLanguageSettings()
 
         records = FakeRecordRepository()
         assetRepository = FakeAssetRepository()
@@ -177,6 +181,7 @@ class SettingsViewModelTest {
             fileStore = files,
         ),
         shareLauncher = share,
+        uiLanguage = language,
         resumeCloudJobs = ResumeCloudJobsUseCase(
             recordRepository = records,
             collectionRepository = FakeCollectionRepository(),
@@ -188,6 +193,37 @@ class SettingsViewModelTest {
             gatewaySettings = FakeAiGatewaySettings(),
         ),
     )
+
+    // ------------------------------------------------------------ 界面语言（P11）
+
+    /**
+     * 切换语言只写偏好、更新选中态：**零请求、零任务、零数据库写入**（R-I18N-02）。
+     *
+     * 这条用例盯的就是"顺手做点什么"：一旦有人在这里触发重新生成或补投，
+     * 用户切换一次界面语言就会重跑全部历史记录。
+     */
+    @Test
+    fun OnLanguageSelected_persistsAndDoesNotTriggerAnyWork() {
+        val viewModel = seededViewModel()
+        val before = scheduler.enqueued.size
+        val derivedBefore = derivedRepository.stored.size
+
+        viewModel.onLanguageSelected(AppLanguage.EN)
+
+        assertEquals("必须写入偏好", listOf(AppLanguage.EN), language.selections)
+        assertEquals(AppLanguage.EN, viewModel.uiState.value.language)
+        assertEquals("不能排任何后台任务", before, scheduler.enqueued.size)
+        assertEquals("不能改派生内容", derivedBefore, derivedRepository.stored.size)
+    }
+
+    @Test
+    fun OnLanguageSelected_sameLanguage_isNoOp() {
+        val viewModel = seededViewModel()
+
+        viewModel.onLanguageSelected(AppLanguage.ZH)
+
+        assertTrue("选中的就是当前语言，不该再写一次", language.selections.isEmpty())
+    }
 
     // ------------------------------------------------------------ 初始状态
 

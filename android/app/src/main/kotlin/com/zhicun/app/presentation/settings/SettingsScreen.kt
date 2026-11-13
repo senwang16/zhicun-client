@@ -1,5 +1,8 @@
 package com.zhicun.app.presentation.settings
 
+import android.app.Activity
+import android.content.Context
+import android.content.ContextWrapper
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -24,6 +27,7 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -33,6 +37,8 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.zhicun.app.R
+import com.zhicun.app.domain.settings.AppLanguage
+import com.zhicun.app.widget.QuickCaptureWidgetProvider
 
 /** 测试与无障碍定位用的 tag。 */
 object SettingsTestTags {
@@ -89,6 +95,10 @@ object SettingsTestTags {
     const val PRIVACY_DETAIL = "settings_privacy_detail"
     const val VERSION = "settings_version"
     const val FEEDBACK = "settings_feedback"
+
+    // 语言分组（P11）：两个单选项，点一下立即切换
+    const val LANGUAGE_ZH = "settings_language_zh"
+    const val LANGUAGE_EN = "settings_language_en"
 }
 
 /**
@@ -106,6 +116,8 @@ fun SettingsScreen(
     viewModel: SettingsViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val context = LocalContext.current
+    val activity = context.findActivity()
 
     LifecycleEventEffect(Lifecycle.Event.ON_RESUME) {
         viewModel.refresh()
@@ -130,6 +142,13 @@ fun SettingsScreen(
         onSaveEmbed = viewModel::onSaveEmbedProvider,
         onSaveAsr = viewModel::onSaveAsrProvider,
         onReEmbed = viewModel::onReEmbedClick,
+        onLanguageSelected = { language ->
+            viewModel.onLanguageSelected(language)
+            // 小组件不在 Activity 资源链上，不主动重绘会停在旧语言（P11-05）
+            QuickCaptureWidgetProvider.refreshAll(context)
+            // Android 13+ 系统已按 applicationLocales 重建，再调一次就是双重建闪两下
+            if (viewModel.recreateRequiredAfterSelect) activity?.recreate()
+        },
         onFeedbackClick = viewModel::onFeedbackClick,
         onExportConfirmed = viewModel::onExportConfirmed,
         onCleanupConfirmed = viewModel::onCleanupConfirmed,
@@ -155,6 +174,7 @@ fun SettingsScreen(
  * @param onSaveEmbed 保存向量 Provider 回调。
  * @param onSaveAsr 保存转写 Provider 回调。
  * @param onReEmbed 批量重建向量回调。
+ * @param onLanguageSelected 语言单选回调（P11）；切换只写偏好，是否重建由调用方决定。
  * @param onFeedbackClick 点"意见反馈"回调。
  * @param onExportConfirmed 导出确认回调，参数是"是否包含 AI 派生内容"。
  * @param onCleanupConfirmed 清理确认回调。
@@ -182,6 +202,7 @@ fun SettingsContent(
     onSaveEmbed: (String, String, String) -> Unit = { _, _, _ -> },
     onSaveAsr: (String, String, String) -> Unit = { _, _, _ -> },
     onReEmbed: () -> Unit = {},
+    onLanguageSelected: (AppLanguage) -> Unit = {},
     onFeedbackClick: () -> Unit = {},
     onExportConfirmed: (Boolean) -> Unit = {},
     onCleanupConfirmed: () -> Unit = {},
@@ -281,6 +302,14 @@ fun SettingsContent(
             SectionTitle(text = stringResource(R.string.settings_section_privacy))
             SettingsGroup { PrivacySection() }
 
+            SectionTitle(text = stringResource(R.string.settings_section_language))
+            SettingsGroup {
+                LanguageSection(
+                    current = uiState.language,
+                    onSelect = onLanguageSelected,
+                )
+            }
+
             SectionTitle(text = stringResource(R.string.settings_section_about))
             SettingsGroup { AboutSection(uiState = uiState, onFeedbackClick = onFeedbackClick) }
 
@@ -319,4 +348,11 @@ internal fun SectionTitle(text: String) {
         color = MaterialTheme.colorScheme.onSurfaceVariant,
     )
     Spacer(modifier = Modifier.height(8.dp))
+}
+
+/** 从任意被包裹的 Context 里找到宿主 Activity（语言切换要靠它 `recreate()`）。 */
+private tailrec fun Context.findActivity(): Activity? = when (this) {
+    is Activity -> this
+    is ContextWrapper -> baseContext.findActivity()
+    else -> null
 }

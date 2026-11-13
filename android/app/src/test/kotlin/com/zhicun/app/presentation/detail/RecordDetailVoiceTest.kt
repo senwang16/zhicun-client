@@ -30,7 +30,7 @@ import org.robolectric.annotation.Config
  * （M9 验收标准：转写失败时原音频仍可播放，显示失败状态）。
  */
 @RunWith(RobolectricTestRunner::class)
-@Config(qualifiers = "w411dp-h891dp")
+@Config(qualifiers = "zh-rCN-w411dp-h891dp")
 class RecordDetailVoiceTest {
 
     @get:Rule

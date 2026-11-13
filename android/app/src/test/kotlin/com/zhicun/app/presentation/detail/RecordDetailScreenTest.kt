@@ -30,7 +30,7 @@ import org.robolectric.annotation.Config
 
 /** 详情页界面测试：原文、来源、处理状态、附件状态是否都渲染出来，返回按钮是否回调。 */
 @RunWith(RobolectricTestRunner::class)
-@Config(qualifiers = "w411dp-h891dp")
+@Config(qualifiers = "zh-rCN-w411dp-h891dp")
 class RecordDetailScreenTest {
 
     @get:Rule
