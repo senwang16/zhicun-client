@@ -260,5 +260,5 @@ sealed interface InboxUiState {
      * 只带一个字符串资源 id，不带异常文本：面向用户的文案不该出现
      * `SQLiteDatabaseCorruptException` 这类内容；原始异常走 Log（见 ViewModel）。
      */
-    data class Error(@StringRes val messageRes: Int) : InboxUiState
+    data class Error(@param:StringRes val messageRes: Int) : InboxUiState
 }

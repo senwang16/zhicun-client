@@ -22,7 +22,7 @@ import javax.inject.Singleton
  */
 @Singleton
 class AndroidFloatingBubbleGateway @Inject constructor(
-    @ApplicationContext private val context: Context,
+    @param:ApplicationContext private val context: Context,
     private val settings: FloatingBubbleSettings,
 ) : FloatingBubbleGateway {
 

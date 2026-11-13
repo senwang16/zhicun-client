@@ -29,7 +29,7 @@ import javax.inject.Singleton
  */
 @Singleton
 class WorkManagerProcessingScheduler @Inject constructor(
-    @ApplicationContext private val context: Context,
+    @param:ApplicationContext private val context: Context,
 ) : ProcessingScheduler {
 
     private val workManager: WorkManager get() = WorkManager.getInstance(context)

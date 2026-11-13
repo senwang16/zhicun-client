@@ -4,6 +4,34 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow SemVer once the
 project reaches 1.0.
 
+## [0.1.2] - 2026-11-13
+
+Self-hosted providers over loopback, a stable release test suite, and compiler-warning cleanup.
+
+### Added
+
+- **Cleartext HTTP for loopback addresses.** `res/xml/network_security_config.xml` allows
+  `http://` to `localhost`, `127.0.0.1`, `::1` and `10.0.2.2` (the emulator's host alias), so a
+  model server running on the device or on the emulator's host is reachable in custom-provider
+  mode. Any other host still requires `https://`, and the platform rejects cleartext before the
+  request leaves the app, so an API key is never sent unencrypted over a LAN or the internet.
+  The allow-list is pinned by `NetworkSecurityConfigTest`.
+- **`INSECURE_URL` explanation.** When the network security policy blocks a cleartext host, the
+  app now reports it as `INSECURE_URL` with the allowed loopback hosts instead of a generic
+  network failure.
+
+### Changed
+
+- **`./gradlew test` now equals `testDebugUnitTest`.** `testReleaseUnitTest` is disabled: the
+  Compose/Robolectric suite depends on the debug-only `ui-test-manifest`, so a release-variant
+  run failed on ~275 "Unable to resolve activity" errors that said nothing about the code.
+- **Compiler-warning cleanup.** Explicit `@param:` annotation targets (`@ApplicationContext`,
+  `@StringRes`, `@DrawableRes`, …) across 20+ files, `TopAppBarDefaults.topAppBarColors` instead
+  of the deprecated `centerAlignedTopAppBarColors`, and Compose UI tests migrated to
+  `androidx.compose.ui.test.junit4.v2.createComposeRule`.
+- **`docs/ai-provider.md` and `docs/development.md`** document the cleartext policy, the
+  `INSECURE_URL` error, and the release-variant test decision.
+
 ## [0.1.1] - 2026-11-13
 
 Bilingual interface, language-aware AI output, and the open-source provider configuration

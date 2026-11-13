@@ -8,6 +8,7 @@ import com.zhicun.app.domain.ai.GatewayRateLimitedException
 import com.zhicun.app.domain.ai.GatewayRejectedException
 import com.zhicun.app.domain.ai.GatewayTransientException
 import java.io.IOException
+import java.net.UnknownServiceException
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -240,6 +241,18 @@ class AiGatewayHttp @Inject constructor(
             val response = try {
                 target.newCall(request).execute()
             } catch (e: IOException) {
+                // 明文流量被系统拦下（2026-11-13 审核 #3）：这不是网络抖动，重试一万次也一样。
+                //
+                // 只有回环地址在 network_security_config.xml 里被放行，用户把自定义地址填成
+                // `http://192.168.1.20:11434` 时平台会在建 socket 前就拒绝，OkHttp 抛出
+                // `CLEARTEXT communication to … not permitted by network security policy`。
+                // 若按 IOException 一律当瞬时故障，界面会显示"访问 AI 网关失败"并反复重试，
+                // 用户根本猜不到是协议问题。这里翻成终态 + 明确的出路。
+                if (e.isCleartextBlocked()) throw GatewayRejectedException(
+                    code = "INSECURE_URL",
+                    message = "该地址不允许明文 HTTP：只有本机地址（localhost / 127.0.0.1）可以，" +
+                        "其他地址请改用 https://（系统已拒绝发送，避免 API Key 明文外发）",
+                )
                 // 连接中断、DNS 失败、超时：都值得重试
                 throw GatewayTransientException("访问 AI 网关失败", e)
             }
@@ -336,6 +349,21 @@ class AiGatewayHttp @Inject constructor(
 
     private fun codeOf(element: JsonElement?): String? =
         (element as? JsonPrimitive)?.contentOrNull?.trim()?.takeIf { it.isNotEmpty() }
+
+    /**
+     * 是不是"明文 HTTP 被系统的网络安全策略拦下"（2026-11-13 审核 #3）。
+     *
+     * 判定方式刻意只认 OkHttp 自己抛的这条文案（`RealConnection` 里写的
+     * `CLEARTEXT communication to <host> not permitted by network security policy`），
+     * 而不是自己按 scheme 猜：请求真正发出去之前就失败，这里拿到的是**平台的结论**，
+     * 不会把"用户填了 http 但配置允许"的合法请求误判成错误。
+     *
+     * 用异常类型 + 文案双重判断：`UnknownServiceException` 是 OkHttp 抛出的确切类型，
+     * 文案兜底防止上游换实现时静默失效（漏判只是回到"当普通网络失败重试"，不会误伤）。
+     */
+    private fun IOException.isCleartextBlocked(): Boolean =
+        this is UnknownServiceException ||
+            message?.contains("CLEARTEXT", ignoreCase = true) == true
 
     /** 配额耗尽类错误码：都意味着"再试也没用"，必须与普通限流分开。 */
     private fun isQuotaExhausted(code: String?): Boolean =

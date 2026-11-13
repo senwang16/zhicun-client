@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    明文 HTTP 的放行范围（2026-11-13 审核 #3 整改）。
+
+    ## 为什么需要这个文件
+    targetSdk 36 起，平台默认 **禁止明文流量**（`NetworkSecurityConfig.getDefaultBuilder`：
+    targetSdk >= 28 时 cleartext 默认 false）。而自定义 AI Provider 明确支持
+    `http://127.0.0.1:11434/v1` 这类本机 Ollama 地址（见 docs/ai-provider.md 与
+    AiGatewayHttp.postProvider 的注释）。没有这份配置时，代码层放行了 `http://`，
+    系统层仍会在 socket 建立前直接抛
+    `CLEARTEXT communication to 127.0.0.1 not permitted by network security policy` ——
+    文档承诺的场景在真机上根本走不通，且错误文案与"地址填错"长得一样，极难排查。
+
+    ## 为什么只放行回环
+    明文 HTTP 意味着链路上的任何一跳都能读到内容（自定义模式下还包括用户填的 API Key）。
+    本机回环不经过任何网卡，没有窃听面；局域网/公网明文则不是 —— 那些地址继续强制 HTTPS。
+    这也是"最小放行"：一旦将来有人把 baseUrl 改成 `http://192.168.x.x`，
+    系统会立刻拒绝，而不是悄悄用明文把 Key 发到局域网里。
+
+    ## 为什么是这五个主机名
+    Android 的 `ApplicationConfig.getConfigForHostname` 用**字符串精确匹配**（子域另算），
+    不做 DNS 解析，也不做 IP 归一化。所以回环的各种写法必须逐个列出：
+      - `localhost`        标准回环名
+      - `127.0.0.1`        IPv4 回环（OkHttp 的 `HttpUrl.host` 原样保留，不带方括号）
+      - `[::1]` / `::1`    IPv6 回环：OkHttp 给出带方括号的形式，平台匹配的是不带方括号的
+                           hostname，两种都写上，避免某一层先剥掉括号
+      - `10.0.2.2`         Android 模拟器访问宿主机的固定别名（等价于宿主的 127.0.0.1）
+    不写 `0.0.0.0`：它不是可连接的目标地址，写进去只会扩大匹配面。
+
+    注意：这里的域名匹配是"配置项"，与 WebView/网页抓取的 SSRF 校验（SafeUrlChecker）
+    是两条互不相干的链路 —— 后者仍然拒绝一切回环与内网地址，不受本文件影响。
+-->
+<network-security-config>
+    <!-- 默认策略不变：公网地址只允许 HTTPS（显式写出，避免将来被误改） -->
+    <base-config cleartextTrafficPermitted="false" />
+
+    <domain-config cleartextTrafficPermitted="true">
+        <domain includeSubdomains="false">localhost</domain>
+        <domain includeSubdomains="false">127.0.0.1</domain>
+        <domain includeSubdomains="false">[::1]</domain>
+        <domain includeSubdomains="false">::1</domain>
+        <!-- Android 模拟器里指向宿主机的固定地址（本地 Ollama / vLLM 常在这里） -->
+        <domain includeSubdomains="false">10.0.2.2</domain>
+    </domain-config>
+</network-security-config>

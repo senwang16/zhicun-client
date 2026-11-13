@@ -32,7 +32,7 @@ import javax.inject.Singleton
  */
 @Singleton
 class AndroidKeepAliveGateway @Inject constructor(
-    @ApplicationContext private val context: Context,
+    @param:ApplicationContext private val context: Context,
 ) : KeepAliveGateway {
 
     override fun status(): KeepAliveStatus = KeepAliveStatus(

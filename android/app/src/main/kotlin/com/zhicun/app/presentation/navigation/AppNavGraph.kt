@@ -26,7 +26,7 @@ import com.zhicun.app.presentation.onboarding.OnboardingViewModel
 import com.zhicun.app.presentation.search.SearchScreen
 import com.zhicun.app.presentation.settings.SettingsScreen
 import com.zhicun.app.presentation.voice.VoiceRecordScreen
-import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.emptyFlow

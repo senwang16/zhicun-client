@@ -9,7 +9,7 @@ files and voice notes from any app, and get AI summaries, tags, OCR, transcripts
 semantic search on top of them. Everything is stored locally; AI processing is opt-in and
 can use the official service or your own OpenAI-compatible providers.
 
-> **Status: pre-1.0 (v0.1.1).** The app works and is used daily by the maintainer, but APIs,
+> **Status: pre-1.0 (v0.1.2).** The app works and is used daily by the maintainer, but APIs,
 > database schema and configuration formats may still change. The UI is available in
 > **Chinese and English**: first launch follows your phone's language, and you can switch at
 > any time in **Settings → Language**.
@@ -82,7 +82,7 @@ your own providers; no server component is required.
 A signed release APK is attached to the latest GitHub Release:
 <https://github.com/senwang16/zhicun-client/releases/latest>
 
-- Package: `com.zhicun.app`, version 0.1.1 (versionCode 2)
+- Package: `com.zhicun.app`, version 0.1.2 (versionCode 3)
 - Certificate SHA-256: `1b5a61a420b994925a4db79cab5d9f31a1f608fe9eda3ca6027cf12adc9e48c9`
 - The APK contains **no official-service token**. Configure your own OpenAI-compatible or
   Anthropic provider in Settings, or request official-service access separately.

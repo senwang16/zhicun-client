@@ -30,7 +30,7 @@ import kotlinx.coroutines.withContext
  */
 @Singleton
 class ExternalAssetImporterImpl @Inject constructor(
-    @ApplicationContext private val context: Context,
+    @param:ApplicationContext private val context: Context,
 ) : ExternalAssetImporter {
 
     override suspend fun import(recordId: String, source: InputUri): ImportedAsset =

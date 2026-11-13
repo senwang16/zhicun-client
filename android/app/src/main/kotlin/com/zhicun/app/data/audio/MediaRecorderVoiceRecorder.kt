@@ -36,7 +36,7 @@ import javax.inject.Singleton
  */
 @Singleton
 class MediaRecorderVoiceRecorder @Inject constructor(
-    @ApplicationContext private val context: Context,
+    @param:ApplicationContext private val context: Context,
 ) : VoiceRecorder {
 
     private val audioManager: AudioManager =

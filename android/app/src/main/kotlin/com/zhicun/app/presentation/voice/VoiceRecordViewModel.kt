@@ -47,7 +47,7 @@ import kotlinx.coroutines.launch
 class VoiceRecordViewModel @Inject constructor(
     private val recorder: VoiceRecorder,
     private val saveVoiceNote: SaveVoiceNoteUseCase,
-    @ApplicationContext private val context: Context,
+    @param:ApplicationContext private val context: Context,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow<VoiceRecordUiState>(VoiceRecordUiState.Preparing)

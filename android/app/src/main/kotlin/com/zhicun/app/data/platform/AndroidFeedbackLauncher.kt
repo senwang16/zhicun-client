@@ -26,7 +26,7 @@ import javax.inject.Singleton
  */
 @Singleton
 class AndroidFeedbackLauncher @Inject constructor(
-    @ApplicationContext private val context: Context,
+    @param:ApplicationContext private val context: Context,
 ) : FeedbackLauncher {
 
     override fun open() {

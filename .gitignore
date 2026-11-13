@@ -57,6 +57,11 @@ wrangler.toml
 test/verify-*/
 test/ui-review-*/
 
+# 第三方 Agent 的代码审核报告：内部流程产物，含未发布问题细节，不进版本库
+antigravity审核/
+antigrativy-审核/
+antigravity-审核/
+
 # ── 系统文件 ────────────────────────────────────────────────────────
 .DS_Store
 Thumbs.db

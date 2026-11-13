@@ -25,7 +25,7 @@ import javax.inject.Singleton
  */
 @Singleton
 class AppLocaleManager @Inject constructor(
-    @ApplicationContext private val appContext: Context,
+    @param:ApplicationContext private val appContext: Context,
     private val preference: LanguagePreference,
 ) : UiLanguageSettings {
 

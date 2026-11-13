@@ -41,7 +41,7 @@ import kotlinx.coroutines.withContext
  */
 @Singleton
 class ZipExportWriter @Inject constructor(
-    @ApplicationContext private val context: Context,
+    @param:ApplicationContext private val context: Context,
 ) : ExportArchiveWriter {
 
     override suspend fun write(

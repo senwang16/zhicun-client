@@ -34,9 +34,19 @@ Enter the URL up to the API version, for example:
 - `http://127.0.0.1:11434/v1` (Ollama on the same device)
 
 The app appends the path itself. If you enter only a host (`https://api.siliconflow.cn`),
-`/v1` is added automatically. Trailing slashes are normalized. `http://` is accepted for
-self-hosted servers (the key then travels unencrypted inside your own network); use `https`
-for anything on the public internet.
+`/v1` is added automatically. Trailing slashes are normalized.
+
+**Cleartext `http://` is allowed for loopback addresses only** — `localhost`, `127.0.0.1`,
+`::1`, and `10.0.2.2` (the emulator's alias for the host machine). That is enough for a
+model server running on the same device or in the emulator's host. Any other host must use
+`https://`: the platform's network security policy rejects cleartext to a LAN or public
+address before the request is sent, so your API key is never transmitted unencrypted over a
+network. The allow-list lives in `android/app/src/main/res/xml/network_security_config.xml`;
+the app reports such a rejection as `INSECURE_URL` with an explanation rather than as a
+generic network failure.
+
+A model server on another machine in your LAN therefore needs TLS (a self-signed
+certificate plus a trust anchor), or a local reverse proxy on the phone itself.
 
 Do not append `/chat/completions` or `/embeddings` yourself — they are added by capability.
 
@@ -132,6 +142,7 @@ A fresh install has nothing to rebuild. Records that are archived or deleted are
 | 429 `DAILY_QUOTA_EXCEEDED` / `SERVICE_BUSY` | Official-service daily quota reached | Retry the next day or configure your own provider |
 | 429 "限流" without a quota code | Vendor rate limit | The task backs off using `Retry-After` and does not consume its retry budget |
 | "API 地址无法解析" | Not a valid http(s) URL | Fix the URL |
+| `INSECURE_URL` "该地址不允许明文 HTTP" | The base URL is `http://` on a host outside the loopback allow-list (LAN or public) | Use `https://`, or run the model server on the phone / emulator host |
 | "模型返回的内容无法解析为 JSON" | Model ignored the JSON instruction (twice) | Try a model with better instruction following, or JSON mode support |
 | "向量维度异常" | The embeddings card points at a chat endpoint | Fix the URL; valid embeddings are capped at 8192 dimensions |
 | "尚未配置 AI 网关" (not configured) | The capability has no usable provider | Fill the card, or switch on the official service |
@@ -149,6 +160,10 @@ A fresh install has nothing to rebuild. Records that are archived or deleted are
 - `data/remote/AiRouting.kt` — runtime choice between official and custom, per call.
 - `data/settings/PreferencesAiProviderSettings.kt` — storage. Keys are encrypted with
   AndroidKeyStore AES/GCM; the settings screen never reads them back.
+- `res/xml/network_security_config.xml` — cleartext policy. The official gateway path in
+  `AiGatewayHttp.post` hard-rejects non-HTTPS in code; the custom-provider path accepts
+  `http://`, and the platform's allow-list decides which hosts that actually covers
+  (loopback only). `NetworkSecurityConfigTest` pins that list.
 - The official gateway protocol (`/api/v1/enrich`, `/embed`, `/transcribe`) is a separate,
   incompatible contract (raw audio bytes instead of multipart, `{"title",...}` instead of
   Chat Completions). Do not mix the two paths.

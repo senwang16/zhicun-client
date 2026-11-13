@@ -18,7 +18,7 @@ import kotlinx.coroutines.withContext
  */
 @Singleton
 class ContentResolverMimeTypeResolver @Inject constructor(
-    @ApplicationContext private val context: Context,
+    @param:ApplicationContext private val context: Context,
 ) : MimeTypeResolver {
 
     override suspend fun resolve(uri: String): String? = withContext(Dispatchers.IO) {

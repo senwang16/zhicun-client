@@ -19,7 +19,7 @@ import kotlinx.coroutines.withContext
  */
 @Singleton
 class ContentResolverAssetNameResolver @Inject constructor(
-    @ApplicationContext private val context: Context,
+    @param:ApplicationContext private val context: Context,
 ) : AssetNameResolver {
 
     override suspend fun resolve(uri: String): String? = withContext(Dispatchers.IO) {

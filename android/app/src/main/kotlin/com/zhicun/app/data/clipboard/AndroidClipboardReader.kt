@@ -33,7 +33,7 @@ import kotlinx.coroutines.withContext
  */
 @Singleton
 class AndroidClipboardReader @Inject constructor(
-    @ApplicationContext private val context: Context,
+    @param:ApplicationContext private val context: Context,
 ) : ClipboardReader {
 
     override suspend fun read(): ClipboardReadResult = withContext(Dispatchers.IO) {

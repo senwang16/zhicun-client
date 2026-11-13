@@ -38,6 +38,11 @@ points it at the Aliyun Maven mirror (see `app/build.gradle.kts`) because the de
 from China. If you are outside China and the mirror is slower, change
 `robolectric.dependency.repo.url` locally — do not commit that change.
 
+`testReleaseUnitTest` is disabled on purpose (see the comment in `app/build.gradle.kts`): the
+Compose/Robolectric tests depend on the debug-only `ui-test-manifest`, so a release-variant run
+fails on ~275 "Unable to resolve activity" errors that say nothing about the code. Plain
+`./gradlew test` therefore runs the debug suite only and is equivalent to `testDebugUnitTest`.
+
 ### Optional: bake a gateway into a debug build
 
 ```bash

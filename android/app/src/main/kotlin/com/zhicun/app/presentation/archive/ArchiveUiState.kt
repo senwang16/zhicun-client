@@ -31,7 +31,7 @@ sealed interface ArchiveUiState {
         val tagsByRecord: Map<String, List<Tag>> = emptyMap(),
     ) : ArchiveUiState
 
-    data class Error(@StringRes val messageRes: Int) : ArchiveUiState
+    data class Error(@param:StringRes val messageRes: Int) : ArchiveUiState
 }
 
 /**

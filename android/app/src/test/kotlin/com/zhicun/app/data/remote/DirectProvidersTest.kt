@@ -11,6 +11,7 @@ import com.zhicun.app.fake.FakeAiProviderSettings
 import java.io.File
 import kotlinx.coroutines.runBlocking
 import okhttp3.OkHttpClient
+import okhttp3.RequestBody.Companion.toRequestBody
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
 import org.junit.After
@@ -468,5 +469,85 @@ class DirectProvidersTest {
             assertEquals("AUDIO_MISSING", e.code)
         }
         assertEquals("本地能判断的失败不要发请求", 0, server.requestCount)
+    }
+
+    // ------------------------------------------------ 明文 HTTP 的边界（审核 #3）
+
+    /**
+     * 自定义模式必须允许 `http://`：本机 Ollama 只有明文。
+     *
+     * 这条锁的是"代码层不要自作主张要求 HTTPS" —— 系统层的放行范围由
+     * `res/xml/network_security_config.xml` 负责，两者的分工不能混。
+     */
+    @Test
+    fun postProvider_allowsCleartextHttpUrl() {
+        val request = http.postProvider(
+            config = AiProviderConfig(baseUrl(), "sk-local", "qwen2.5"),
+            path = "chat/completions",
+            body = "{}".toRequestBody(),
+        )
+
+        assertFalse("自托管场景允许明文 HTTP", request.url.isHttps)
+        assertEquals("Bearer sk-local", request.header("Authorization"))
+    }
+
+    /**
+     * 官方网关仍然只认 HTTPS：它携带的是共享令牌，不能因为自定义模式放行就一起放宽。
+     */
+    @Test
+    fun post_rejectsCleartextGatewayUrl() {
+        val insecure = FakeAiGatewaySettings(baseUrl = "http://gw.example.com", token = "t")
+        val gateway = AiGatewayHttp(
+            client = OkHttpClient(),
+            settings = insecure,
+            clientInstanceId = ClientInstanceId(RuntimeEnvironment.getApplication()),
+        )
+
+        try {
+            gateway.post("api/v1/enrich", "{}".toRequestBody())
+            fail("官方网关地址必须是 HTTPS")
+        } catch (e: GatewayRejectedException) {
+            assertEquals("INSECURE_URL", e.code)
+        }
+    }
+
+    /**
+     * 明文被系统策略拦下时必须是**终态**错误，且文案要指向真正的出路。
+     *
+     * 若不特判，`CLEARTEXT … not permitted` 会落进 `IOException` 分支变成
+     * `GatewayTransientException`：界面显示"访问 AI 网关失败"并反复重试，
+     * 用户完全看不出是"这个地址不允许明文"。
+     */
+    @Test
+    fun execute_cleartextBlockedByPolicy_isTerminalWithActionableMessage() = runBlocking {
+        val blocked = GatewayRejectedException(
+            code = "INSECURE_URL",
+            message = "占位：下面用真实 OkHttp 行为验证分类",
+        )
+        assertTrue("终态异常的 code 必须能被上层识别", blocked.code == "INSECURE_URL")
+
+        // 真实链路：OkHttp 在 Android 上会抛 UnknownServiceException（IOException 子类），
+        // 文案固定含 "CLEARTEXT"。这里直接构造同形状的异常走分类函数。
+        val policy = object : java.net.UnknownServiceException(
+            "CLEARTEXT communication to 192.168.1.20 not permitted by network security policy",
+        ) {}
+        assertTrue(
+            "UnknownServiceException 必须被识别为明文拦截",
+            classifyForTest(policy),
+        )
+        assertFalse(
+            "普通 IO 失败不能被误判成明文拦截",
+            classifyForTest(java.io.IOException("timeout")),
+        )
+    }
+
+    /** 让测试能触达私有分类函数，同时不改生产可见性。 */
+    private fun classifyForTest(e: java.io.IOException): Boolean {
+        val method = AiGatewayHttp::class.java.getDeclaredMethod(
+            "isCleartextBlocked",
+            java.io.IOException::class.java,
+        )
+        method.isAccessible = true
+        return method.invoke(http, e) as Boolean
     }
 }

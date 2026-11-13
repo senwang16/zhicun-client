@@ -31,7 +31,7 @@ class BuildConfigContractTest {
 
     @Test
     fun BuildConfig_versionName_matchesScaffoldVersion() {
-        assertEquals("0.1.1", BuildConfig.VERSION_NAME)
-        assertEquals(2L, BuildConfig.VERSION_CODE.toLong())
+        assertEquals("0.1.2", BuildConfig.VERSION_NAME)
+        assertEquals(3L, BuildConfig.VERSION_CODE.toLong())
     }
 }

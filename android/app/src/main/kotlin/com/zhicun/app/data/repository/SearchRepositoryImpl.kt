@@ -44,7 +44,7 @@ class SearchRepositoryImpl @Inject constructor(
                     ORDER BY rowid DESC
                     LIMIT ?
                     """.trimIndent(),
-                    arrayOf(expression, limit),
+                    arrayOf<Any?>(expression, limit),
                 ),
             )
         }.orEmpty()

@@ -8,7 +8,7 @@
 截图、文件和语音存进来，由 AI 生成摘要、标签、OCR 文字、转写与语义索引。
 原始内容只存在手机上，云端处理默认关闭，可以接官方服务，也可以接你自己的模型。
 
-> **当前状态：pre-1.0（v0.1.1）。** 已在日常使用中跑通全部核心链路，但接口、数据库结构与
+> **当前状态：pre-1.0（v0.1.2）。** 已在日常使用中跑通全部核心链路，但接口、数据库结构与
 > 配置格式仍可能变化；升级前请先导出数据。界面支持**中文 / English**：首次启动跟随手机
 > 语言，之后可在「设置 → 语言」随时一键切换。英文版 README 见 [README.md](README.md)。
 
@@ -72,7 +72,7 @@
 最新的 GitHub Release 附带**已签名的 release APK**：
 <https://github.com/senwang16/zhicun-client/releases/latest>
 
-- 包名 `com.zhicun.app`，版本 0.1.1（versionCode 2）
+- 包名 `com.zhicun.app`，版本 0.1.2（versionCode 3）
 - 签名证书 SHA-256：`1b5a61a420b994925a4db79cab5d9f31a1f608fe9eda3ca6027cf12adc9e48c9`
 - APK **不含任何官方服务令牌**：请在设置里填自己的 OpenAI 兼容 / Anthropic Key，
   或单独申请官方服务令牌。

@@ -68,8 +68,8 @@ android {
         applicationId = "com.zhicun.app"
         minSdk = libs.versions.minSdk.get().toInt()
         targetSdk = libs.versions.targetSdk.get().toInt()
-        versionCode = 2
-        versionName = "0.1.1"
+        versionCode = 3
+        versionName = "0.1.2"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
@@ -162,6 +162,19 @@ android {
         }
     }
 
+    /**
+     * 单元测试只在 debug 变体上跑（2026-11-13 审核 #1）。
+     *
+     * 裸跑 `./gradlew test` 会把 `testReleaseUnitTest` 一起带上，而 Compose 的 Robolectric
+     * 测试依赖 **debug 变体**才有的 `ui-test-manifest`（它在 `debugImplementation` 里，
+     * release 变体合并出的 Manifest 没有那个 Activity）。实测 release 变体 1542 个用例里
+     * 275 个挂在 `Unable to resolve activity for Intent { ... androidx.activity.ComponentActivity }`，
+     * 另有两条断言本身就是 debug 契约（`BuildConfig.DEBUG == true`、版本号 0.1.1）。
+     *
+     * 所以那些失败不是被测代码坏了，而是**在错误的变体上跑测试**。这里关掉 release 单测，
+     * 让 `./gradlew test` 与 `testDebugUnitTest` 等价 —— 贡献者不会因为敲了前者就以为项目坏了。
+     * 在 release 产物上验证属于真机验收（docs/development.md §7），不是 JVM 单测的职责。
+     */
     testOptions {
         unitTests {
             // Robolectric 需要访问合并后的资源与 Manifest
@@ -191,6 +204,22 @@ tasks.withType<Test>().configureEach {
         "robolectric.dependency.repo.url",
         "https://maven.aliyun.com/repository/central",
     )
+}
+
+/**
+ * release 变体的单测整体跳过（2026-11-13 审核 #1）。
+ *
+ * 为什么不写在 `android { testOptions { unitTests.all { ... } } }` 里：
+ * AGP 8.13 的 `UnitTestOptions` 没有 `all` 方法（那是旧版 DSL），写了会直接让
+ * build.gradle.kts 编译失败。任务层面的写法与 AGP 版本无关，也不依赖变体 API。
+ *
+ * 关掉的理由见 `testOptions` 上方的注释：这些用例依赖 debug 变体的 ui-test-manifest，
+ * 在 release 上必然大面积失败，属"跑错变体"而非代码缺陷。
+ * 用 `tasks.matching` 而不是 `withType`：此刻 release 单测任务可能还没注册，
+ * 惰性匹配能在注册后立刻生效，也不会在任务名不存在时抛异常。
+ */
+tasks.matching { it.name == "testReleaseUnitTest" }.configureEach {
+    enabled = false
 }
 
 kotlin {

@@ -27,8 +27,8 @@ object AppBottomBarTestTags {
 
 private enum class AppBottomDestination(
     val route: String,
-    @StringRes val labelRes: Int,
-    @DrawableRes val iconRes: Int,
+    @param:StringRes val labelRes: Int,
+    @param:DrawableRes val iconRes: Int,
     val testTag: String,
 ) {
     INBOX(Routes.INBOX, R.string.inbox_title, R.drawable.ic_nav_inbox, AppBottomBarTestTags.INBOX),

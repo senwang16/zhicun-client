@@ -32,8 +32,8 @@ import com.zhicun.app.presentation.theme.AppTheme
  * 但悬浮面板**只展示** [PANEL_ACTIONS]（PRD v1.2 §3.2：恰好三个）。
  */
 enum class QuickCaptureAction(
-    @StringRes val labelRes: Int,
-    @DrawableRes val iconRes: Int,
+    @param:StringRes val labelRes: Int,
+    @param:DrawableRes val iconRes: Int,
 ) {
     SCREENSHOT(R.string.floating_action_screenshot, R.drawable.ic_action_screenshot),
     TEXT(R.string.floating_action_text, R.drawable.ic_action_text),

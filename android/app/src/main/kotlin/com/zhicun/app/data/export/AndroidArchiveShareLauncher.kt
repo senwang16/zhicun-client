@@ -25,7 +25,7 @@ import javax.inject.Singleton
  */
 @Singleton
 class AndroidArchiveShareLauncher @Inject constructor(
-    @ApplicationContext private val context: Context,
+    @param:ApplicationContext private val context: Context,
 ) : ArchiveShareLauncher {
 
     override fun share(archive: File): Boolean {
