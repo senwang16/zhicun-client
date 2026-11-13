@@ -261,6 +261,14 @@ class AiGatewayHttp @Inject constructor(
                         message = "内容超过服务允许的大小",
                     )
 
+                    // 免费试用额度（2026-11-13）：429 也可能是"今日额度用完"，不是"发太快"。
+                    // 这类错误当天重试没有意义，必须按终态处理，并把"填自己的 Key"这条出路说清楚。
+                    resp.code == 429 && isTrialQuotaCode(errorCode) -> throw GatewayRejectedException(
+                        code = errorCode,
+                        message = trialQuotaMessage(errorCode)
+                            ?: "官方服务今日额度已用完，请明天再试或填写自己的模型 Key",
+                    )
+
                     // 配额耗尽与普通限流都是 429，但处理方式相反：
                     // 配额耗尽重试只会白烧电（终态，提示用户充值/换 Key），
                     // 普通限流才该退避（不消耗任务重试预算）。OpenAI 系用 insufficient_quota。
@@ -281,7 +289,7 @@ class AiGatewayHttp @Inject constructor(
 
                     resp.code == 402 -> throw GatewayRejectedException(
                         code = errorCode ?: "QUOTA_EXHAUSTED",
-                        message = "AI 服务配额已用尽（402），请检查账户余额",
+                        message = trialQuotaMessage(errorCode) ?: "AI 服务配额已用尽（402），请检查账户余额",
                     )
 
                     // 404 在直连模式下几乎总是"地址或模型名填错"，说清楚比只报状态码有用
@@ -333,6 +341,29 @@ class AiGatewayHttp @Inject constructor(
     private fun isQuotaExhausted(code: String?): Boolean =
         code != null && code.lowercase() in QUOTA_EXHAUSTED_CODES
 
+    /** 官方免费试用额度用尽（2026-11-13）：402/429 都可能出现，重试无意义。 */
+    private fun isTrialQuotaCode(code: String?): Boolean =
+        code != null && code in TRIAL_QUOTA_CODES
+
+    /**
+     * 试用额度错误 → 给用户的出路。
+     *
+     * 这三条文案的目标只有一个：告诉用户"不是坏了，也不是你的内容有问题，
+     * 填自己的 Key 就能继续"，而不是让他在"处理失败"里反复点重试。
+     */
+    private fun trialQuotaMessage(code: String?): String? = when (code) {
+        "TRIAL_EXHAUSTED" ->
+            "官方免费试用次数已用完。可在设置里填写自己的模型 Key 继续使用，不受官方额度限制。"
+
+        "DAILY_QUOTA_EXCEEDED" ->
+            "官方服务今日免费额度已用完。明天再试，或在设置里填写自己的模型 Key 继续使用。"
+
+        "SERVICE_BUSY" ->
+            "官方服务今日额度已满。明天再试，或在设置里填写自己的模型 Key 继续使用。"
+
+        else -> null
+    }
+
     private companion object {
         const val CONNECT_TIMEOUT_SECONDS = 15L
         const val CALL_TIMEOUT_SECONDS = 120L
@@ -354,6 +385,13 @@ class AiGatewayHttp @Inject constructor(
             "quota_exceeded",
             "quota_exhausted",
             "billing_hard_limit_reached",
+        )
+
+        /** 官方网关的免费试用额度错误码（区分大小写，均来自我们自己的服务端）。 */
+        val TRIAL_QUOTA_CODES = setOf(
+            "TRIAL_EXHAUSTED",
+            "DAILY_QUOTA_EXCEEDED",
+            "SERVICE_BUSY",
         )
 
         /**

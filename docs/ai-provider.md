@@ -125,6 +125,8 @@ A fresh install has nothing to rebuild. Records that are archived or deleted are
 | 401 / 403 "请检查 API Key 或访问令牌" | Wrong or revoked key; wrong official token | Paste the key again (the field is never pre-filled) |
 | 404 "找不到该接口或模型" | Base URL includes an extra path, or the model name is wrong | Enter the base URL up to `/v1`; check the exact model id |
 | 402 / 429 `insufficient_quota` | Account balance exhausted | Top up or switch vendor. This is terminal: the app will not retry |
+| 402 `TRIAL_EXHAUSTED` | Official-service free trial exhausted | Configure your own provider — the app stops retrying and says so |
+| 429 `DAILY_QUOTA_EXCEEDED` / `SERVICE_BUSY` | Official-service daily quota reached | Retry the next day or configure your own provider |
 | 429 "限流" without a quota code | Vendor rate limit | The task backs off using `Retry-After` and does not consume its retry budget |
 | "API 地址无法解析" | Not a valid http(s) URL | Fix the URL |
 | "模型返回的内容无法解析为 JSON" | Model ignored the JSON instruction (twice) | Try a model with better instruction following, or JSON mode support |

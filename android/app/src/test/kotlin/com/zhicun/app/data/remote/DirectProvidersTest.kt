@@ -203,6 +203,54 @@ class DirectProvidersTest {
         }
     }
 
+    // ------------------------------------------------ 官方免费试用额度（2026-11-13）
+
+    @Test
+    fun OfficialTrialExhausted402_isRejectedWithOwnKeyHint() = runBlocking {
+        server.enqueue(
+            MockResponse()
+                .setResponseCode(402)
+                .setHeader("Content-Type", "application/json")
+                .setBody(
+                    """{"error":{"code":"TRIAL_EXHAUSTED","message":"免费试用次数已用完"}}""",
+                ),
+        )
+        val provider = DirectChatProvider(http, providerSettings(chat = true))
+
+        try {
+            provider.enrich("文本")
+            fail("试用额度用完是终态，不该当普通失败")
+        } catch (e: GatewayRejectedException) {
+            assertEquals("TRIAL_EXHAUSTED", e.code)
+            assertTrue(
+                "文案必须给出「填自己的 Key」这条出路，实际：${e.message}",
+                e.message.orEmpty().contains("自己的模型 Key"),
+            )
+        }
+    }
+
+    @Test
+    fun OfficialDailyQuota429_isRejectedNotRetriedAsRateLimit() = runBlocking {
+        server.enqueue(
+            MockResponse()
+                .setResponseCode(429)
+                .setHeader("Content-Type", "application/json")
+                .setBody(
+                    """{"error":{"code":"DAILY_QUOTA_EXCEEDED","message":"今日免费额度已用完"}}""",
+                ),
+        )
+        val provider = DirectChatProvider(http, providerSettings(chat = true))
+
+        try {
+            provider.enrich("文本")
+            fail("每日额度用完当天重试没有意义，必须按终态处理")
+        } catch (e: GatewayRejectedException) {
+            assertEquals("DAILY_QUOTA_EXCEEDED", e.code)
+            assertTrue(e.message.orEmpty().contains("自己的模型 Key"))
+        }
+        assertEquals("不该触发一次重发", 1, server.requestCount)
+    }
+
     // ------------------------------------------------------------ Anthropic Messages
 
     @Test
