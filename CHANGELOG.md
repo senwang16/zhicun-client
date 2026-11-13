@@ -28,6 +28,11 @@ Open-source readiness work. No release artifacts yet.
   vectors are incompatible, reusing the existing pipeline and privacy gates.
 - **Error-code coverage** for OpenAI-style and domestic vendor envelopes, plus explicit
   handling of 402 and quota-exhausted 429 responses (terminal) versus ordinary rate limits.
+- **Official trial quota handling**: `TRIAL_EXHAUSTED` (402) and `DAILY_QUOTA_EXCEEDED` /
+  `SERVICE_BUSY` (429) are treated as terminal and tell the user to configure their own
+  provider instead of retrying.
+- **Optional release signing**: `android/keystore.properties` (gitignored) enables a signed
+  `assembleRelease`; without it the build stays unsigned for contributors and CI.
 - **Open-source documentation**: English and Chinese README, architecture, development guide,
   AI provider guide, FAQ, privacy notice, contributing guide, code of conduct, security policy.
 - **License**: Apache License 2.0 (`LICENSE`) with a `NOTICE` covering third-party attributions
