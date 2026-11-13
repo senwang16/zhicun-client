@@ -28,6 +28,23 @@ val aiGatewayUrl: String =
 val aiGatewayToken: String =
     (project.findProperty("aiGatewayToken") as String?) ?: localProps.getProperty("aiGatewayToken").orEmpty()
 
+/**
+ * 发布签名配置（2026-11-13）。
+ *
+ * 读取 `android/keystore.properties`（gitignored，格式见 `keystore.properties.example`）。
+ * 没有这个文件时 release 构建仍是**未签名**的 —— 这是贡献者/CI 的默认状态，
+ * 公开仓不应该包含任何人的签名密钥。
+ *
+ * 密钥本身放在仓库外（当前是 `F:\project\zhicun-keys\zhicun-release.jks`），
+ * `keystore.properties` 只存路径与口令，两者都不入库。
+ */
+val keystoreProps = Properties().apply {
+    val f = rootProject.file("keystore.properties")
+    if (f.exists()) f.inputStream().use { load(it) }
+}
+val releaseStoreFile: String? = keystoreProps.getProperty("storeFile")?.takeIf { it.isNotBlank() }
+val hasReleaseKey: Boolean = releaseStoreFile != null
+
 /** 转义成 Kotlin/Java 字符串字面量内容，避免属性里混入引号把 BuildConfig 写坏。 */
 fun String.asBuildConfigLiteral(): String = replace("\\", "\\\\").replace("\"", "\\\"")
 
@@ -35,6 +52,17 @@ android {
     namespace = "com.zhicun.app"
     // SDK 版本统一收在 Version Catalog（审核 #5 整改），此处只引用
     compileSdk = libs.versions.compileSdk.get().toInt()
+
+    signingConfigs {
+        if (hasReleaseKey) {
+            create("release") {
+                storeFile = file(releaseStoreFile!!)
+                storePassword = keystoreProps.getProperty("storePassword")
+                keyAlias = keystoreProps.getProperty("keyAlias")
+                keyPassword = keystoreProps.getProperty("keyPassword")
+            }
+        }
+    }
 
     defaultConfig {
         applicationId = "com.zhicun.app"
@@ -97,10 +125,8 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro",
             )
-            // 没有 signingConfig：`assembleRelease` 产出的是**未签名**包，不能直接安装。
-            // 内测侧载有两条路：① assembleDebug（debug 签名）；② assembleRelease 后用
-            // build-tools 的 apksigner 手动签（见 DEVELOPMENT_PLAN 附录 G）。
-            // 正式发布前必须先建独立发布密钥 —— 密钥一旦更换，用户只能卸载重装（会丢数据）。
+            // 有 keystore.properties 时签名；没有则保持未签名（贡献者/CI 的默认状态）
+            signingConfig = if (hasReleaseKey) signingConfigs.getByName("release") else null
         }
     }
 

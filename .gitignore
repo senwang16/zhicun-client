@@ -23,6 +23,8 @@ captures/
 # ── 签名与 Firebase 配置（含密钥，不入库）───────────────────────────
 *.jks
 *.keystore
+# 发布签名口令与路径（见 android/keystore.properties.example）
+keystore.properties
 google-services.json
 firebase的指纹.txt
 

@@ -127,18 +127,31 @@ Automated tests cannot cover the device's system integrations. Run this before a
 
 ## 8. Release builds
 
-`assembleRelease` currently produces an **unsigned** APK; there is no signing config in the
-repo. Before publishing:
+The repository has **no** signing key: a fresh clone produces an unsigned release APK. To sign
+locally:
 
-1. create a dedicated release keystore and keep it out of git (`*.jks` is ignored);
-2. set `signingConfig` locally (do not commit keystore paths or passwords);
-3. keep R8/obfuscation off until a full device pass has been done with it on
+1. create a dedicated release keystore **outside the repository** (never commit it):
+   ```bash
+   keytool -genkeypair -v -keystore /path/to/zhicun-release.jks -alias zhicun \
+     -keyalg RSA -keysize 4096 -validity 10000 -dname "CN=ZhiCun"
+   ```
+2. copy `android/keystore.properties.example` to `android/keystore.properties` and fill in the
+   absolute `storeFile`, `storePassword`, `keyAlias`, `keyPassword` (both files are gitignored);
+3. `./gradlew :app:assembleRelease` — the APK is signed when `keystore.properties` exists, and
+   stays unsigned when it does not (contributors and CI);
+4. verify the signature and record the certificate fingerprint:
+   ```bash
+   apksigner verify --print-certs app/build/outputs/apk/release/app-release.apk
+   ```
+5. confirm the APK embeds **no** gateway URL/token (check the generated `BuildConfig.java`, or
+   `strings` the dex);
+6. keep R8/obfuscation off until a full device pass has been done with it on
    (see the comment in `app/build.gradle.kts`);
-4. verify the APK contains no gateway URL/token (`aapt dump badging`, or unzip and grep
-   `BuildConfig`);
-5. ship `LICENSE` and `NOTICE` alongside any binary distribution (Apache-2.0 §4(a) and §4(d));
-   an in-app notices screen is optional but recommended;
-6. bump `versionCode`/`versionName` and update `CHANGELOG.md`.
+7. ship `LICENSE` and `NOTICE` alongside any binary distribution (Apache-2.0 §4(a) and §4(d));
+8. bump `versionCode`/`versionName` and update `CHANGELOG.md`.
+
+**Back up the keystore and its passwords.** If they are lost, existing users cannot install an
+update over the old app; they would have to uninstall and lose their local data.
 
 ## 9. Troubleshooting
 
